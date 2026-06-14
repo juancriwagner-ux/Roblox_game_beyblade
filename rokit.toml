@@ -1,0 +1,6 @@
+# Rokit toolchain manifest — installs the tools needed to build the game.
+# Install Rokit (https://github.com/rojo-rbx/rokit), then run `rokit install`
+# in this folder to get Rojo at the pinned version.
+
+[tools]
+rojo = "rojo-rbx/rojo@7.4.4"

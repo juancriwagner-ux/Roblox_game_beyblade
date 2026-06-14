@@ -1,0 +1,18 @@
+# Roblox / Rojo
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Toolchain
+.rokit/
+.foreman/
+
+# Editor
+.vscode/
+.idea/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

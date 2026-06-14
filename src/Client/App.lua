@@ -1,0 +1,394 @@
+--!strict
+-- App.lua — the main UI: HUD, navigation dock, and the Collection / Shop /
+-- Daily panels. Everything reacts to ClientState changes.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local Shared = ReplicatedStorage.Shared
+local Net = require(Shared.Net)
+local Config = require(Shared.Config)
+local Util = require(Shared.Util)
+local BeybladeData = require(Shared.BeybladeData)
+local RarityData = require(Shared.RarityData)
+local CategoryData = require(Shared.CategoryData)
+local SkinData = require(Shared.SkinData)
+
+local UITheme = require(script.Parent.UITheme)
+local ClientState = require(script.Parent.ClientState)
+local ViewportPreview = require(script.Parent.ViewportPreview)
+
+local App = {}
+
+local gui: ScreenGui
+local panels: { [string]: Frame } = {}
+local boltsLabel, coresLabel, powerLabel
+local battleButton: TextButton
+local searching = false
+
+-- ===== HUD ============================================================
+local function currencyPill(name: string, color: Color3, parent: Instance, order: number): TextLabel
+	local pill = UITheme.frame({
+		Size = UDim2.new(0, 150, 0, 40), BackgroundColor3 = UITheme.Color.Panel,
+		LayoutOrder = order,
+	}, parent)
+	UITheme.corner(20, pill)
+	UITheme.stroke(color, 2, pill)
+	local dot = UITheme.frame({ Size = UDim2.new(0, 26, 0, 26), Position = UDim2.new(0, 7, 0.5, -13), BackgroundColor3 = color }, pill)
+	UITheme.corner(13, dot)
+	local label = UITheme.label({
+		Size = UDim2.new(1, -44, 1, 0), Position = UDim2.new(0, 40, 0, 0),
+		Text = "0", TextXAlignment = Enum.TextXAlignment.Left, TextSize = 18,
+	}, pill)
+	return label
+end
+
+local function buildHud()
+	local top = UITheme.frame({ Name = "Top", BackgroundTransparency = 1, Size = UDim2.new(0, 480, 0, 48), Position = UDim2.new(0, 16, 0, 12) }, gui)
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.Padding = UDim.new(0, 10)
+	layout.Parent = top
+	boltsLabel = currencyPill("Bolts", UITheme.Color.Bolts, top, 1)
+	coresLabel = currencyPill("Cores", UITheme.Color.Cores, top, 2)
+
+	powerLabel = UITheme.label({
+		Size = UDim2.new(0, 320, 0, 24), Position = UDim2.new(0, 18, 0, 66),
+		Text = "", TextColor3 = UITheme.Color.SubText, TextSize = 15,
+		TextXAlignment = Enum.TextXAlignment.Left, Font = UITheme.FontRegular,
+	}, gui)
+end
+
+-- ===== Navigation dock ================================================
+local function dockButton(text: string, order: number, parent: Instance, onClick: () -> ()): TextButton
+	local b = UITheme.button({
+		Size = UDim2.new(0, 150, 0, 46), BackgroundColor3 = UITheme.Color.PanelLight,
+		TextColor3 = UITheme.Color.Text, Text = text, TextSize = 17, LayoutOrder = order,
+	}, parent)
+	UITheme.corner(12, b)
+	UITheme.stroke(UITheme.Color.Stroke, 1.5, b)
+	b.MouseButton1Click:Connect(onClick)
+	return b
+end
+
+-- ===== Panel skeleton =================================================
+local function makePanel(name: string, title: string): (Frame, ScrollingFrame)
+	local panel = UITheme.frame({
+		Name = name, Visible = false,
+		Size = UDim2.new(0, 720, 0, 460), Position = UDim2.new(0.5, -360, 0.5, -230),
+		BackgroundColor3 = UITheme.Color.BG,
+	}, gui)
+	UITheme.corner(18, panel)
+	UITheme.stroke(UITheme.Color.Accent, 2, panel)
+
+	UITheme.label({ Size = UDim2.new(1, -120, 0, 40), Position = UDim2.new(0, 24, 0, 14), Text = title, TextSize = 26, TextXAlignment = Enum.TextXAlignment.Left }, panel)
+	local close = UITheme.button({ Size = UDim2.new(0, 40, 0, 40), Position = UDim2.new(1, -52, 0, 14), Text = "✕", BackgroundColor3 = UITheme.Color.Bad, TextColor3 = UITheme.Color.Text }, panel)
+	UITheme.corner(10, close)
+	close.MouseButton1Click:Connect(function()
+		panel.Visible = false
+	end)
+
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Name = "Content"
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.Size = UDim2.new(1, -32, 1, -76)
+	scroll.Position = UDim2.new(0, 16, 0, 64)
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.ScrollBarThickness = 6
+	scroll.ScrollBarImageColor3 = UITheme.Color.Accent
+	scroll.Parent = panel
+
+	panels[name] = panel
+	return panel, scroll
+end
+
+local function openPanel(name: string)
+	for n, p in panels do
+		p.Visible = (n == name)
+	end
+	local p = panels[name]
+	if p then
+		p.Size = UDim2.new(0, 0, 0, 0)
+		p.Position = UDim2.new(0.5, 0, 0.5, 0)
+		TweenService:Create(p, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Size = UDim2.new(0, 720, 0, 460), Position = UDim2.new(0.5, -360, 0.5, -230),
+		}):Play()
+	end
+end
+
+-- ===== Collection =====================================================
+local function rarityBadge(parent: Instance, rarity: string)
+	local tier = RarityData.Tiers[rarity]
+	local badge = UITheme.label({
+		Size = UDim2.new(1, -12, 0, 18), Position = UDim2.new(0, 6, 0, 6),
+		Text = tier.Name, TextColor3 = tier.Color, TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	}, parent)
+	return badge
+end
+
+local function buildCollection(scroll: ScrollingFrame)
+	for _, c in scroll:GetChildren() do
+		if c:IsA("Frame") or c:IsA("UIGridLayout") then
+			c:Destroy()
+		end
+	end
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.new(0, 158, 0, 196)
+	grid.CellPadding = UDim2.new(0, 12, 0, 12)
+	grid.Parent = scroll
+
+	local profile = ClientState.get()
+	if not profile then
+		return
+	end
+
+	-- Sort inventory by power descending.
+	local entries = {}
+	for _, e in profile.Inventory do
+		table.insert(entries, e)
+	end
+	table.sort(entries, function(a, b)
+		return BeybladeData.power(a.BladeId, a.Rarity) > BeybladeData.power(b.BladeId, b.Rarity)
+	end)
+
+	for _, entry in entries do
+		local def = BeybladeData.get(entry.BladeId)
+		if not def then
+			continue
+		end
+		local equipped = profile.Equipped.BladeId == entry.BladeId and profile.Equipped.Rarity == entry.Rarity
+		local tier = RarityData.Tiers[entry.Rarity]
+
+		local cell = UITheme.frame({ BackgroundColor3 = UITheme.Color.Panel }, scroll)
+		UITheme.corner(12, cell)
+		UITheme.stroke(equipped and UITheme.Color.Accent or tier.Color, equipped and 3 or 1.5, cell)
+
+		local vp = UITheme.viewport({ Size = UDim2.new(1, -12, 0, 96), Position = UDim2.new(0, 6, 0, 26) }, cell)
+		UITheme.corner(8, vp)
+		ViewportPreview.render(vp, entry.BladeId, entry.Rarity, profile.SkinByBlade[entry.BladeId])
+
+		rarityBadge(cell, entry.Rarity)
+		UITheme.label({ Size = UDim2.new(1, -12, 0, 18), Position = UDim2.new(0, 6, 0, 124), Text = def.Name, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, cell)
+		UITheme.label({
+			Size = UDim2.new(1, -12, 0, 16), Position = UDim2.new(0, 6, 0, 142),
+			Text = ("⚡%d  ×%d"):format(BeybladeData.power(entry.BladeId, entry.Rarity), entry.Count),
+			TextSize = 13, TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular,
+			TextXAlignment = Enum.TextXAlignment.Left,
+		}, cell)
+
+		local equipBtn = UITheme.button({
+			Size = UDim2.new(entry.Count >= 3 and 0.58 or 1, -8, 0, 26), Position = UDim2.new(0, 6, 1, -32),
+			Text = equipped and "EQUIPADO" or "Equipar", TextSize = 13,
+			BackgroundColor3 = equipped and UITheme.Color.Good or UITheme.Color.Accent,
+		}, cell)
+		UITheme.corner(8, equipBtn)
+		equipBtn.MouseButton1Click:Connect(function()
+			(Net.get("EquipBlade") :: RemoteFunction):InvokeServer(entry.BladeId, entry.Rarity)
+		end)
+
+		if entry.Count >= 3 then
+			local up = UITheme.button({
+				Size = UDim2.new(0.42, -8, 0, 26), Position = UDim2.new(0.58, 6, 1, -32),
+				Text = "⬆ x3", TextSize = 13, BackgroundColor3 = UITheme.Color.Accent2, TextColor3 = UITheme.Color.Text,
+			}, cell)
+			UITheme.corner(8, up)
+			up.MouseButton1Click:Connect(function()
+				(Net.get("PrestigeBlade") :: RemoteFunction):InvokeServer(entry.BladeId, entry.Rarity)
+			end)
+		end
+	end
+end
+
+-- ===== Shop ===========================================================
+local function buildShop(scroll: ScrollingFrame)
+	for _, c in scroll:GetChildren() do
+		if c:IsA("Frame") or c:IsA("UIGridLayout") then
+			c:Destroy()
+		end
+	end
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.new(0, 158, 0, 210)
+	grid.CellPadding = UDim2.new(0, 12, 0, 12)
+	grid.Parent = scroll
+
+	local profile = ClientState.get()
+	if not profile then
+		return
+	end
+	local previewBlade = profile.Equipped.BladeId
+	local previewRarity = profile.Equipped.Rarity
+
+	for _, skinId in SkinData.allIds() do
+		local skin = SkinData.get(skinId)
+		if not skin or skin.Id == "default" then
+			continue
+		end
+		local owned = profile.Skins[skinId] == true
+		local tier = RarityData.Tiers[skin.Rarity]
+		local inUse = profile.SkinByBlade[previewBlade] == skinId
+
+		local cell = UITheme.frame({ BackgroundColor3 = UITheme.Color.Panel }, scroll)
+		UITheme.corner(12, cell)
+		UITheme.stroke(tier.Color, owned and 2.5 or 1.5, cell)
+
+		local vp = UITheme.viewport({ Size = UDim2.new(1, -12, 0, 100), Position = UDim2.new(0, 6, 0, 26) }, cell)
+		UITheme.corner(8, vp)
+		ViewportPreview.render(vp, previewBlade, previewRarity, skinId)
+
+		UITheme.label({ Size = UDim2.new(1, -12, 0, 18), Position = UDim2.new(0, 6, 0, 6), Text = skin.Limited and "★ LIMITADA" or tier.Name, TextColor3 = tier.Color, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left }, cell)
+		UITheme.label({ Size = UDim2.new(1, -12, 0, 18), Position = UDim2.new(0, 6, 0, 128), Text = skin.Name, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, cell)
+		UITheme.label({ Size = UDim2.new(1, -12, 0, 16), Position = UDim2.new(0, 6, 0, 148), Text = ("◆ %d Núcleos"):format(skin.Price), TextColor3 = UITheme.Color.Cores, TextSize = 13, Font = UITheme.FontRegular, TextXAlignment = Enum.TextXAlignment.Left }, cell)
+
+		local btn = UITheme.button({ Size = UDim2.new(1, -12, 0, 30), Position = UDim2.new(0, 6, 1, -36), TextSize = 14 }, cell)
+		UITheme.corner(8, btn)
+		if not owned then
+			btn.Text = "Comprar"
+			btn.BackgroundColor3 = UITheme.Color.Cores
+			btn.MouseButton1Click:Connect(function()
+				(Net.get("BuySkin") :: RemoteFunction):InvokeServer(skinId)
+			end)
+		elseif inUse then
+			btn.Text = "EN USO"
+			btn.BackgroundColor3 = UITheme.Color.Good
+		else
+			btn.Text = "Equipar"
+			btn.BackgroundColor3 = UITheme.Color.Accent
+			btn.MouseButton1Click:Connect(function()
+				(Net.get("EquipSkin") :: RemoteFunction):InvokeServer(previewBlade, skinId)
+			end)
+		end
+	end
+end
+
+-- ===== Daily ==========================================================
+local function buildDaily(scroll: ScrollingFrame)
+	for _, c in scroll:GetChildren() do
+		if c:IsA("Frame") or c:IsA("UIGridLayout") or c:IsA("TextButton") then
+			c:Destroy()
+		end
+	end
+	local profile = ClientState.get()
+	if not profile then
+		return
+	end
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.new(0, 88, 0, 110)
+	grid.CellPadding = UDim2.new(0, 10, 0, 10)
+	grid.Parent = scroll
+
+	for i, reward in Config.Rewards.Daily do
+		local claimedToday = (i <= profile.Daily.Day)
+		local isNext = (i == (profile.Daily.Day % #Config.Rewards.Daily) + 1)
+		local cell = UITheme.frame({ BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = i }, scroll)
+		UITheme.corner(10, cell)
+		UITheme.stroke(isNext and UITheme.Color.Accent or (claimedToday and UITheme.Color.Good or UITheme.Color.Stroke), isNext and 3 or 1.5, cell)
+		UITheme.label({ Size = UDim2.new(1, 0, 0, 20), Position = UDim2.new(0, 0, 0, 8), Text = ("Día %d"):format(i), TextSize = 14 }, cell)
+		UITheme.label({ Size = UDim2.new(1, -8, 0, 18), Position = UDim2.new(0, 4, 0, 44), Text = ("⚙ %d"):format(reward.Bolts), TextColor3 = UITheme.Color.Bolts, TextSize = 13, Font = UITheme.FontRegular }, cell)
+		UITheme.label({ Size = UDim2.new(1, -8, 0, 18), Position = UDim2.new(0, 4, 0, 64), Text = ("◆ %d"):format(reward.Cores), TextColor3 = UITheme.Color.Cores, TextSize = 13, Font = UITheme.FontRegular }, cell)
+		if claimedToday then
+			UITheme.label({ Size = UDim2.new(1, 0, 0, 18), Position = UDim2.new(0, 0, 1, -24), Text = "✓", TextColor3 = UITheme.Color.Good, TextSize = 16 }, cell)
+		end
+	end
+
+	local claim = UITheme.button({ Size = UDim2.new(0, 220, 0, 44), Position = UDim2.new(0, 0, 0, 130), Text = "Reclamar recompensa diaria", TextSize = 16, BackgroundColor3 = UITheme.Color.Accent }, scroll)
+	UITheme.corner(10, claim)
+	claim.MouseButton1Click:Connect(function()
+		local res = (Net.get("ClaimDaily") :: RemoteFunction):InvokeServer()
+		if res and not res.ok and res.remaining then
+			claim.Text = "Disponible en " .. Util.duration(res.remaining)
+			task.delay(2.5, function()
+				claim.Text = "Reclamar recompensa diaria"
+			end)
+		end
+	end)
+end
+
+-- ===== Refresh on profile change ======================================
+local function refreshHud(profile)
+	if not profile then
+		return
+	end
+	boltsLabel.Text = Util.abbreviate(profile.Currencies.Bolts)
+	coresLabel.Text = Util.abbreviate(profile.Currencies.Cores)
+	local eq = profile.Equipped
+	local def = BeybladeData.get(eq.BladeId)
+	if def then
+		powerLabel.Text = ("Equipado: <b>%s</b> · %s · ⚡%d"):format(def.Name, RarityData.Tiers[eq.Rarity].Name, BeybladeData.power(eq.BladeId, eq.Rarity))
+	end
+end
+
+function App.setBattleSearching(state: boolean)
+	searching = state
+	if battleButton then
+		battleButton.Text = state and "Buscando rival..." or "⚔️  BATALLAR"
+		battleButton.BackgroundColor3 = state and UITheme.Color.PanelLight or UITheme.Color.Bad
+	end
+end
+
+function App.start(screenGui: ScreenGui)
+	gui = screenGui
+	buildHud()
+
+	-- Navigation dock.
+	local dock = UITheme.frame({ Name = "Dock", BackgroundTransparency = 1, Size = UDim2.new(0, 150, 0, 220), Position = UDim2.new(0, 16, 1, -240) }, gui)
+	local dl = Instance.new("UIListLayout")
+	dl.Padding = UDim.new(0, 10)
+	dl.Parent = dock
+
+	-- Panels.
+	local _, colScroll = makePanel("Collection", "🎒  Colección")
+	local _, shopScroll = makePanel("Shop", "🛒  Tienda de Skins")
+	local _, dailyScroll = makePanel("Daily", "🎁  Recompensa Diaria")
+
+	dockButton("🎒  Colección", 2, dock, function()
+		buildCollection(colScroll)
+		openPanel("Collection")
+	end)
+	dockButton("🛒  Tienda", 3, dock, function()
+		buildShop(shopScroll)
+		openPanel("Shop")
+	end)
+	dockButton("🎁  Diario", 4, dock, function()
+		buildDaily(dailyScroll)
+		openPanel("Daily")
+	end)
+
+	-- Big battle button (bottom centre).
+	battleButton = UITheme.button({
+		Size = UDim2.new(0, 280, 0, 64), Position = UDim2.new(0.5, -140, 1, -84),
+		Text = "⚔️  BATALLAR", TextSize = 24, BackgroundColor3 = UITheme.Color.Bad, TextColor3 = UITheme.Color.Text,
+	}, gui)
+	UITheme.corner(16, battleButton)
+	UITheme.stroke(UITheme.Color.Accent, 2.5, battleButton)
+	battleButton.MouseButton1Click:Connect(function()
+		if searching then
+			return
+		end
+		App.setBattleSearching(true)
+		local res = (Net.get("StartBattle") :: RemoteFunction):InvokeServer()
+		if not res or not res.ok then
+			App.setBattleSearching(false)
+		end
+	end)
+
+	-- React to data.
+	ClientState.onChanged(function(profile)
+		refreshHud(profile)
+		-- Live-refresh any open panel.
+		if panels.Collection.Visible then
+			buildCollection(colScroll)
+		end
+		if panels.Shop.Visible then
+			buildShop(shopScroll)
+		end
+		if panels.Daily.Visible then
+			buildDaily(dailyScroll)
+		end
+	end)
+end
+
+return App
