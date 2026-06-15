@@ -24,6 +24,7 @@ local LeaderboardService = require(script.LeaderboardService)
 local GachaService = require(script.GachaService)
 local SeasonService = require(script.SeasonService)
 local AchievementService = require(script.AchievementService)
+local BossService = require(script.BossService)
 local Hub = require(script.Hub)
 
 -- ===== Boot =====
@@ -37,6 +38,7 @@ AchievementService.init()
 SpawnService.init()
 MonetizationService.init()
 LeaderboardService.init()
+BossService.init()
 
 -- ===== Remote handlers =====
 -- Per-player, per-remote rate limiting (basic anti-exploit / spam guard).
@@ -96,6 +98,10 @@ end)
 
 onInvoke("SpectateBattle", function(player)
 	return BattleService.spectate(player)
+end)
+
+onInvoke("AttackBoss", function(player)
+	return BossService.attack(player)
 end)
 
 onInvoke("BuySkin", function(player, skinId)
@@ -215,6 +221,7 @@ end
 
 local function onPlayerRemoving(player: Player)
 	BattleService.cleanup(player)
+	BossService.cleanup(player)
 	LeaderboardService.update(player)
 	DataService.release(player)
 	lastCall[player] = nil

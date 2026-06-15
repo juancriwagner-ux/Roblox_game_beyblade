@@ -29,11 +29,13 @@ Net.Definitions = {
 	BuyPremiumPass = "Function", -- () -> { ok, reason? }
 	StartTeamBattle = "Function", -- () -> { ok, matched? }  (2v2)
 	SpectateBattle = "Function", -- () -> live battle payload | { ok=false }
+	AttackBoss = "Function", -- () -> { ok, damage?, hp?, maxHp?, reason? }
 
 	-- Server -> Client (Events)
 	ProfileUpdated = "Event", -- (profile)
 	BattleResult = "Event", -- (result, youAre, opponentName, rewards)
 	TeamBattleResult = "Event", -- (payload, youTeam, rewards)  (2v2)
+	BossUpdate = "Event", -- (state) world boss broadcast
 	Notify = "Event", -- (text, kind)
 	SpawnCollected = "Event", -- (bladeId, rarity)  feedback popup
 }

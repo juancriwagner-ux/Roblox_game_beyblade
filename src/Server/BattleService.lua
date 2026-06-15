@@ -108,7 +108,7 @@ end
 
 -- Build a bot loadout near a target power level.
 local function makeBot(targetPower: number): any
-	local ids = BeybladeData.allIds()
+	local ids = BeybladeData.spawnableIds()
 	local best, bestDiff
 	-- Try a handful of random blade+rarity combos, keep the closest power.
 	for _ = 1, 24 do

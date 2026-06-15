@@ -71,7 +71,7 @@ local function createSpawn(bias: number)
 		return
 	end
 	local rarity = RarityData.roll(bias, rng)
-	local ids = BeybladeData.allIds()
+	local ids = BeybladeData.spawnableIds()
 	local bladeId = ids[rng:NextInteger(1, #ids)]
 
 	local model = ModelBuilder.build({

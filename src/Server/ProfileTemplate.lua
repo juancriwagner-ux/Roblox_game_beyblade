@@ -21,7 +21,7 @@ local function template()
 		-- Currently equipped loadout for battle.
 		Equipped = { BladeId = Config.StartingInventory[1], Rarity = "Common" },
 		-- Lifetime stats.
-		Stats = { Wins = 0, Losses = 0, Streak = 0, BestStreak = 0, Collected = 0, Battles = 0 },
+		Stats = { Wins = 0, Losses = 0, Streak = 0, BestStreak = 0, Collected = 0, Battles = 0, BossKills = 0 },
 		-- Daily login reward tracking.
 		Daily = { LastClaimUnix = 0, Day = 0 },
 		-- Competitive ladder.

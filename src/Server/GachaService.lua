@@ -47,7 +47,7 @@ function GachaService.open(player: Player, crateId: string): any
 		rarity = crate.MinRarity
 	end
 
-	local ids = BeybladeData.allIds()
+	local ids = BeybladeData.spawnableIds()
 	local bladeId = ids[rng:NextInteger(1, #ids)]
 	BeybladeService.grant(player, bladeId, rarity)
 

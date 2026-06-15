@@ -23,7 +23,7 @@ AchievementData.Order = {
 	"streak_5", "streak_10",
 	"collect_25", "collect_100", "collector_10",
 	"gold_league", "diamond_league",
-	"level_10", "battles_100", "fashionista",
+	"level_10", "battles_100", "fashionista", "titan_slayer",
 }
 
 AchievementData.List = {
@@ -41,6 +41,7 @@ AchievementData.List = {
 	level_10 = { Id = "level_10", Name = "Experimentado", Desc = "Llega al nivel 10", Metric = "level", Threshold = 10, Bolts = 600, Cores = 3, Badge = 0, Icon = "⭐" },
 	battles_100 = { Id = "battles_100", Name = "Gladiador", Desc = "Juega 100 batallas", Metric = "battles", Threshold = 100, Bolts = 1500, Cores = 6, Badge = 0, Icon = "🏟️" },
 	fashionista = { Id = "fashionista", Name = "Fashionista", Desc = "Posee 3 skins", Metric = "skins_owned", Threshold = 3, Bolts = 800, Cores = 0, Badge = 0, Icon = "🎨" },
+	titan_slayer = { Id = "titan_slayer", Name = "Cazador de Titanes", Desc = "Derrota a un Jefe Mundial", Metric = "boss_kills", Threshold = 1, Bolts = 2000, Cores = 10, Badge = 0, Icon = "🐲" },
 } :: { [string]: Achievement }
 
 function AchievementData.get(id: string): Achievement?
@@ -56,6 +57,8 @@ function AchievementData.metricValue(profile: any, metric: string): number
 		return profile.Stats.Wins
 	elseif metric == "battles" then
 		return profile.Stats.Battles
+	elseif metric == "boss_kills" then
+		return profile.Stats.BossKills or 0
 	elseif metric == "best_streak" then
 		return profile.Stats.BestStreak
 	elseif metric == "collected" then

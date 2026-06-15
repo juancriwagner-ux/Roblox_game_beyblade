@@ -66,6 +66,11 @@ subir assets), así que el juego es jugable en cuanto lo sincronizas a Studio.
   animación con 4 trompos + barras de equipo. Relleno con bots si faltan jugadores.
 - **Modo espectador**: registro de batallas en vivo (1v1 y 2v2) y botón "Ver"
   para reproducir el choque exacto de una batalla reciente (sin recompensas).
+- **Jefes Mundiales (eventos)**: jefe gigante cooperativo para todo el servidor
+  con vida compartida; todos atacan (daño probabilístico según su blade), y al
+  caer se reparten recompensas por contribución — el top-1 recibe bono + el blade
+  de evento exclusivo **Inferno Titan** (no obtenible de otra forma). Banner con
+  vida/temporizador y cuenta regresiva al siguiente evento.
 
 ---
 

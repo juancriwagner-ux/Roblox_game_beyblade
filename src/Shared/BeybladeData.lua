@@ -34,6 +34,7 @@ export type Blade = {
 	Name: string,
 	Category: string,
 	Element: string,
+	Event: boolean?, -- event-only (excluded from normal spawns/gacha/bots)
 	Rarity: string, -- the "intended" rarity floor for catalog display
 	Stats: Stats,
 	Ability: Ability,
@@ -132,6 +133,14 @@ BeybladeData.Catalog = {
 		Ability = { Id = "ascend", Name = "Ascensión", Desc = "+8% a todos los stats por debajo del 40% de resistencia.", Effect = "desperation", Power = 0.08 },
 		Model = { Profile = "star", Tips = 8, Height = 1.15, Radius = 1.7, Metalness = 0.65 },
 	}),
+
+	-- ===== EVENT (boss reward + boss visual; not in normal spawns) =====
+	inferno_titan = blade({
+		Id = "inferno_titan", Name = "Inferno Titan", Category = "Attack", Element = "Fire", Event = true, Rarity = "Mythic",
+		Stats = { Attack = 104, Defense = 88, Stamina = 92, Speed = 86, Weight = 90 },
+		Ability = { Id = "meteor", Name = "Meteoro", Desc = "10% de probabilidad de golpe devastador que gana la ronda.", Effect = "crit_chance", Power = 0.10 },
+		Model = { Profile = "star", Tips = 8, Height = 1.2, Radius = 1.8, Metalness = 0.7 },
+	}),
 } :: { [string]: Blade }
 
 -- A flat list of catalog ids for iteration / random selection.
@@ -139,6 +148,18 @@ function BeybladeData.allIds(): { string }
 	local ids = {}
 	for id in BeybladeData.Catalog do
 		table.insert(ids, id)
+	end
+	table.sort(ids)
+	return ids
+end
+
+-- Ids that may appear in normal spawns / gacha / bots (excludes event blades).
+function BeybladeData.spawnableIds(): { string }
+	local ids = {}
+	for id, def in BeybladeData.Catalog do
+		if not def.Event then
+			table.insert(ids, id)
+		end
 	end
 	table.sort(ids)
 	return ids
