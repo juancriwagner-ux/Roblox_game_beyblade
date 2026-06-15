@@ -9,6 +9,29 @@ cada concepto incluye el **prompt exacto** y el **modelo recomendado**.
 > Para animar una imagen previa, se pasa su `job_id` en `medias[]` con
 > `role: "start_image"`.
 
+## ✅ Vídeos ya generados (lote inicial)
+
+Las 9 piezas del plan están **generadas** con `kling3_0` image-to-video (5 s, con
+sonido), ancladas a los renders existentes. Están en tu cuenta de Higgsfield
+(`show_generations` type `video`). Descárgalas, añade texto/subtítulos y CTA en
+tu editor (CapCut/Premiere) y publica según el calendario.
+
+| # | Pieza | Formato | start_image | job id del vídeo |
+|---|---|---|---|---|
+| 1 | Trailer de lanzamiento | 16:9 | key art `672d4789` | `cd37a8d0-43b0-42b3-a082-4c8304305651` |
+| 2 | "SALIÓ MÍTICO" (cofre) | 9:16 | Prisma `403bdf4a` | `d912aabc-f4b5-4337-aea0-a597e2d887b4` |
+| 3 | Fuego vs Rayo | 9:16 | Magma `0bcc2db7` | `fb221717-652d-4c61-ab71-83c6bf8bdefb` |
+| 4 | Spin ASMR | 9:16 | Eternal Halo `a56b356f` | `07b4c39a-340a-4c6b-a643-472c0843ce93` |
+| 5 | Tier List | 9:16 | Celestial Prime `8bf79d03` | `4fa20d1c-407e-4f15-98b3-5a8f4d008db1` |
+| 6 | POV racha x10 | 9:16 | Void Reaper `d3b3177a` | `72476278-00ea-41e6-b61b-ef8f9f6a45b8` |
+| 7 | Showcase de skins | 9:16 | Voltage `9c3255bd` | `49dfd2bc-26fa-404f-8b90-f6dc9ff5896f` |
+| 8 | Flex Battle Pass | 9:16 | Celestial Halo `9a180fdf` | `22b0042e-366d-4601-b0bf-ed742fcc1938` |
+| 9 | Code drop | 9:16 | key art `672d4789` | `f50d96ae-0bc8-4c9b-88a1-f70e29d3db41` |
+
+> El texto en pantalla (hooks, "¿CUÁL GANA?", código `LAUNCH`, etc.) se añade en
+> el editor: los modelos no rotulan texto fiable. Las captions/títulos/tags están
+> abajo y en `youtube-seo-and-voiceover.md`.
+
 ## 🎯 Estrategia
 
 - **80% vertical 9:16** (TikTok / Reels / Shorts) para alcance; **20% 16:9**
