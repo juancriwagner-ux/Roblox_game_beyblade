@@ -39,6 +39,40 @@ porque el entorno bloquea el dominio de descarga del CDN). Para verlas/descargar
 > Recórtala en dos PNG (Tuercas / Núcleos) antes de subirlas, o regenérala como
 > dos imágenes separadas si prefieres.
 
+## 🎭 Skins (renders premium)
+
+Súbelas como *Image/Decal* y pega el ID en `Assets.Images` (clave `Skin_<id>`).
+La tienda mostrará el render premium automáticamente; si no, usa el preview 3D.
+
+| Skin | Clave en `Assets.lua` | Rareza | job id |
+|---|---|---|---|
+| **Molten Core** (lava) | `Skin_molten` | Raro | `9c6a2b18-e104-48c0-ae2e-f7e74732f5d9` |
+| **Glacier** (hielo) | `Skin_glacier` | Raro | `e963e671-524b-480c-a0dd-33ffb2b64da9` |
+| **Voltage** (rayo) | `Skin_voltage` | Épico | `9c3255bd-abc6-4228-8f3a-630de6c6aafc` |
+| **Abyssal Obsidian** (sombra) | `Skin_obsidian` | Épico | `987baf18-af34-4e61-a536-0e7434af69e8` |
+| **Celestial Halo** (luz) | `Skin_celestial` | Legendario | `9a180fdf-ec76-42da-a734-ba28e1082698` |
+| **Mythic Prism** (arcoíris) | `Skin_prism` | Mítico | `403bdf4a-3465-4eeb-b211-742fffaf6d09` |
+| **Venom** (tóxico) ⭐ nueva | `Skin_venom` | Épico | `757b1091-4320-4840-b357-7a65ccffa164` |
+
+> *Venom* se añadió al catálogo (`SkinData.lua`) como skin jugable nueva.
+
+## 🔊 Sonidos (SFX)
+
+Súbelos en *Asset Manager → Audio → Import* y pega el ID en `Assets.Sounds`.
+Ya están cableados en el juego (no-op hasta que pegues los IDs).
+
+| Sonido | Clave en `Assets.lua` | Cuándo suena | job id |
+|---|---|---|---|
+| **Lanzamiento** | `Launch` | Al empezar la batalla | `7d7ed898-038e-427b-b032-7cea46d9a34f` |
+| **Choque** | `Clash` | En cada ronda (impacto) | `4d2c993a-3d8c-40e3-a2e3-adf4eca6a644` |
+| **Giro (loop)** | `Spin` | Durante la batalla | `3b9ae4d8-67e6-48bf-98e0-c48dbc72ec42` |
+| **Victoria** | `Victory` | Al ganar | `3ab655ed-c601-4543-83e8-614d5c394b21` |
+| **Derrota** | `Defeat` | Al perder | `fb85fb0b-4bca-46f3-a45c-9f4999ac4c9c` |
+| **Recolección** | `Collect` | Al recoger un Beyblade | `12aac364-477f-4047-a2ea-26a05bbc4b59` |
+
+> Para audio importado, Roblox puede requerir aprobación de moderación antes de
+> que el ID sea reproducible.
+
 ## 🔁 Regenerar o ampliar
 
 Pídele a Claude que genere más (skins, más blades, banners, fondos de UI). Cada

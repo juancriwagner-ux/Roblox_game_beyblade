@@ -29,7 +29,35 @@ Assets.Images = {
 	Blade_void_reaper = "rbxassetid://0",
 	Blade_magma_core = "rbxassetid://0",
 	Blade_eternal_halo = "rbxassetid://0",
+
+	-- Skin renders (shown in the shop cell when uploaded; key = "Skin_" .. skinId)
+	Skin_molten = "rbxassetid://0",
+	Skin_glacier = "rbxassetid://0",
+	Skin_voltage = "rbxassetid://0",
+	Skin_obsidian = "rbxassetid://0",
+	Skin_celestial = "rbxassetid://0",
+	Skin_prism = "rbxassetid://0",
+	Skin_venom = "rbxassetid://0",
 }
+
+-- Sound effect asset IDs. Same deal: upload each generated SFX to Roblox
+-- (Asset Manager → Audio → Import) and paste the resulting ID here.
+Assets.Sounds = {
+	Launch = "rbxassetid://0", -- ripcord launch
+	Clash = "rbxassetid://0", -- blades colliding (per battle round)
+	Spin = "rbxassetid://0", -- looping spin whir during battle
+	Victory = "rbxassetid://0", -- win fanfare
+	Defeat = "rbxassetid://0", -- loss stinger
+	Collect = "rbxassetid://0", -- world-spawn pickup chime
+}
+
+function Assets.sound(key: string): string?
+	local v = Assets.Sounds[key]
+	if v ~= nil and v ~= "rbxassetid://0" then
+		return v
+	end
+	return nil
+end
 
 -- True when a real ID has been pasted in (not the 0 placeholder).
 function Assets.has(key: string): boolean

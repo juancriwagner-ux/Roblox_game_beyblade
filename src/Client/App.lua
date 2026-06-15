@@ -261,9 +261,23 @@ local function buildShop(scroll: ScrollingFrame)
 		UITheme.corner(12, cell)
 		UITheme.stroke(tier.Color, owned and 2.5 or 1.5, cell)
 
-		local vp = UITheme.viewport({ Size = UDim2.new(1, -12, 0, 100), Position = UDim2.new(0, 6, 0, 26) }, cell)
-		UITheme.corner(8, vp)
-		ViewportPreview.render(vp, previewBlade, previewRarity, skinId)
+		-- Prefer the uploaded premium skin render; fall back to the live 3D preview.
+		local skinArt = Assets.image("Skin_" .. skinId)
+		if skinArt then
+			local img = Instance.new("ImageLabel")
+			img.BackgroundColor3 = UITheme.Color.BG
+			img.BorderSizePixel = 0
+			img.Image = skinArt
+			img.ScaleType = Enum.ScaleType.Crop
+			img.Size = UDim2.new(1, -12, 0, 100)
+			img.Position = UDim2.new(0, 6, 0, 26)
+			img.Parent = cell
+			UITheme.corner(8, img)
+		else
+			local vp = UITheme.viewport({ Size = UDim2.new(1, -12, 0, 100), Position = UDim2.new(0, 6, 0, 26) }, cell)
+			UITheme.corner(8, vp)
+			ViewportPreview.render(vp, previewBlade, previewRarity, skinId)
+		end
 
 		UITheme.label({ Size = UDim2.new(1, -12, 0, 18), Position = UDim2.new(0, 6, 0, 6), Text = skin.Limited and "★ LIMITADA" or tier.Name, TextColor3 = tier.Color, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left }, cell)
 		UITheme.label({ Size = UDim2.new(1, -12, 0, 18), Position = UDim2.new(0, 6, 0, 128), Text = skin.Name, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, cell)

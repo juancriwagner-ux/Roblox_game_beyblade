@@ -56,6 +56,11 @@ SkinData.Catalog = {
 		Primary = Color3.fromRGB(255, 120, 200), Secondary = Color3.fromRGB(120, 220, 255),
 		Material = Enum.Material.Neon, Emissive = 2.0, Trail = Color3.fromRGB(255, 180, 255), Aura = "rainbow",
 	},
+	venom = {
+		Id = "venom", Name = "Veneno", Price = 70, Rarity = "Epic",
+		Primary = Color3.fromRGB(120, 255, 64), Secondary = Color3.fromRGB(24, 56, 16),
+		Material = Enum.Material.Neon, Emissive = 1.3, Trail = Color3.fromRGB(150, 255, 80), Aura = "venom",
+	},
 } :: { [string]: Skin }
 
 function SkinData.get(id: string): Skin?

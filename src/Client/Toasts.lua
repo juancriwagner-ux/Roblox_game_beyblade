@@ -10,6 +10,7 @@ local Net = require(Shared.Net)
 local BeybladeData = require(Shared.BeybladeData)
 local RarityData = require(Shared.RarityData)
 local UITheme = require(script.Parent.UITheme)
+local Sound = require(script.Parent.Sound)
 
 local Toasts = {}
 
@@ -57,6 +58,7 @@ local function collectPopup(bladeId: string, rarity: string)
 	if not def or not tier then
 		return
 	end
+	Sound.play("Collect", 0.7)
 	local card = UITheme.frame({
 		Size = UDim2.new(0, 320, 0, 96),
 		Position = UDim2.new(0.5, -160, 0, -120),

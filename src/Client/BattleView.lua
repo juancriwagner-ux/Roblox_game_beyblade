@@ -20,6 +20,7 @@ local CategoryData = require(Shared.CategoryData)
 local ModelBuilder = require(Shared.ModelBuilder)
 local UITheme = require(script.Parent.UITheme)
 local ClientState = require(script.Parent.ClientState)
+local Sound = require(script.Parent.Sound)
 
 local BattleView = {}
 
@@ -249,6 +250,8 @@ function BattleView.play(result: any, youAre: number, opponentName: string, rewa
 	setBar(fillTheirs, 1)
 
 	-- Launch in.
+	Sound.play("Launch", 0.7)
+	Sound.startLoop("Spin", 0.35)
 	task.spawn(function() moveTo(modelMine, ARENA + Vector3.new(-7, 6, 0), 0.6) end)
 	moveTo(modelTheirs, ARENA + Vector3.new(7, 6, 0), 0.6)
 	task.wait(0.3)
@@ -263,6 +266,7 @@ function BattleView.play(result: any, youAre: number, opponentName: string, rewa
 		local clashColor = round.Crit and UITheme.Color.Bolts or UITheme.Color.Accent
 		clashBurst(ARENA + Vector3.new(0, 6, 0), clashColor)
 		cameraShake(round.Crit and 2.4 or 1.4)
+		Sound.play("Clash", round.Crit and 0.9 or 0.6)
 
 		if round.Dodge then
 			roundLabel.Text = "¡ESQUIVA!"
@@ -299,6 +303,8 @@ function BattleView.play(result: any, youAre: number, opponentName: string, rewa
 	end)
 	moveTo(loserModel, loserModel:GetPivot().Position - Vector3.new(0, 4, 0), 1.2)
 
+	Sound.stopLoop("Spin")
+	Sound.play(won and "Victory" or "Defeat", 0.8)
 	resultBanner(gui, won, rewards)
 	task.wait(2.5)
 
