@@ -15,6 +15,8 @@ local RarityData = require(Shared.RarityData)
 local CategoryData = require(Shared.CategoryData)
 local SkinData = require(Shared.SkinData)
 
+local Assets = require(Shared.Assets)
+
 local UITheme = require(script.Parent.UITheme)
 local ClientState = require(script.Parent.ClientState)
 local ViewportPreview = require(script.Parent.ViewportPreview)
@@ -28,15 +30,26 @@ local battleButton: TextButton
 local searching = false
 
 -- ===== HUD ============================================================
-local function currencyPill(name: string, color: Color3, parent: Instance, order: number): TextLabel
+local function currencyPill(iconKey: string, color: Color3, parent: Instance, order: number): TextLabel
 	local pill = UITheme.frame({
 		Size = UDim2.new(0, 150, 0, 40), BackgroundColor3 = UITheme.Color.Panel,
 		LayoutOrder = order,
 	}, parent)
 	UITheme.corner(20, pill)
 	UITheme.stroke(color, 2, pill)
-	local dot = UITheme.frame({ Size = UDim2.new(0, 26, 0, 26), Position = UDim2.new(0, 7, 0.5, -13), BackgroundColor3 = color }, pill)
-	UITheme.corner(13, dot)
+	-- Use the uploaded icon if available, else a coloured dot.
+	local iconImage = Assets.image(iconKey)
+	if iconImage then
+		local icon = Instance.new("ImageLabel")
+		icon.BackgroundTransparency = 1
+		icon.Image = iconImage
+		icon.Size = UDim2.new(0, 30, 0, 30)
+		icon.Position = UDim2.new(0, 6, 0.5, -15)
+		icon.Parent = pill
+	else
+		local dot = UITheme.frame({ Size = UDim2.new(0, 26, 0, 26), Position = UDim2.new(0, 7, 0.5, -13), BackgroundColor3 = color }, pill)
+		UITheme.corner(13, dot)
+	end
 	local label = UITheme.label({
 		Size = UDim2.new(1, -44, 1, 0), Position = UDim2.new(0, 40, 0, 0),
 		Text = "0", TextXAlignment = Enum.TextXAlignment.Left, TextSize = 18,
@@ -50,8 +63,21 @@ local function buildHud()
 	layout.FillDirection = Enum.FillDirection.Horizontal
 	layout.Padding = UDim.new(0, 10)
 	layout.Parent = top
-	boltsLabel = currencyPill("Bolts", UITheme.Color.Bolts, top, 1)
-	coresLabel = currencyPill("Cores", UITheme.Color.Cores, top, 2)
+	boltsLabel = currencyPill("BoltsIcon", UITheme.Color.Bolts, top, 1)
+	coresLabel = currencyPill("CoresIcon", UITheme.Color.Cores, top, 2)
+
+	-- Logo wordmark (top-right) once uploaded.
+	local logo = Assets.image("Logo")
+	if logo then
+		local img = Instance.new("ImageLabel")
+		img.Name = "Logo"
+		img.BackgroundTransparency = 1
+		img.Image = logo
+		img.ScaleType = Enum.ScaleType.Fit
+		img.Size = UDim2.new(0, 280, 0, 90)
+		img.Position = UDim2.new(0.5, -140, 0, 8)
+		img.Parent = gui
+	end
 
 	powerLabel = UITheme.label({
 		Size = UDim2.new(0, 320, 0, 24), Position = UDim2.new(0, 18, 0, 66),
