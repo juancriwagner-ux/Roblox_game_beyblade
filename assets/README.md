@@ -73,6 +73,21 @@ Ya están cableados en el juego (no-op hasta que pegues los IDs).
 > Para audio importado, Roblox puede requerir aprobación de moderación antes de
 > que el ID sea reproducible.
 
+## 🎵 Música de fondo (pendiente de generar)
+
+Cableada en el juego (`MusicController` + `Assets.Music`), con crossfade entre
+el tema del menú y el de batalla y respeto al ajuste de Música. Falta generar
+las pistas (el acceso de generación estaba bloqueado por aprobación). Genéralas
+con `sonilo_music` (~60 s, loop) y pega los IDs en `Assets.Music`:
+
+| Pista | Clave | Prompt sugerido |
+|---|---|---|
+| **Menú/Hub** | `Menu` | "Energetic upbeat electronic menu theme, futuristic arcade, driving synth arpeggios, punchy drums, heroic, seamless loop, no vocals" |
+| **Batalla** | `Battle` | "Intense fast electronic battle theme, aggressive bass, epic percussion, rising tension, esports hype, seamless loop, no vocals" |
+
+> Súbelas en *Asset Manager → Audio → Import* (puede requerir moderación) y pega
+> los IDs en `src/Shared/Assets.lua` → `Assets.Music`.
+
 ## 🔁 Regenerar o ampliar
 
 Pídele a Claude que genere más (skins, más blades, banners, fondos de UI). Cada

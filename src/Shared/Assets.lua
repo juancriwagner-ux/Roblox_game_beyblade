@@ -59,6 +59,20 @@ function Assets.sound(key: string): string?
 	return nil
 end
 
+-- Background music tracks. Upload each to Roblox (Audio) and paste the ID.
+Assets.Music = {
+	Menu = "rbxassetid://0", -- hub / menu loop
+	Battle = "rbxassetid://0", -- intense battle loop
+}
+
+function Assets.music(key: string): string?
+	local v = Assets.Music[key]
+	if v ~= nil and v ~= "rbxassetid://0" then
+		return v
+	end
+	return nil
+end
+
 -- True when a real ID has been pasted in (not the 0 placeholder).
 function Assets.has(key: string): boolean
 	local v = Assets.Images[key]

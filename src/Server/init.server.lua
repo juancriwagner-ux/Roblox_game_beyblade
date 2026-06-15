@@ -175,7 +175,12 @@ end)
 
 -- ===== Player lifecycle =====
 local function onPlayerAdded(player: Player)
-	DataService.load(player)
+	local profile = DataService.load(player)
+	if not profile then
+		-- Could not acquire the session lock (data is busy elsewhere).
+		player:Kick("No pudimos cargar tus datos (sesión ocupada). Vuelve a entrar en unos segundos.")
+		return
+	end
 	ProgressService.setupLeaderstats(player)
 	BeybladeService.grantStarters(player)
 	QuestService.ensureDaily(player)

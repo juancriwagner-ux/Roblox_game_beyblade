@@ -15,6 +15,7 @@ local BattleView = require(script.BattleView)
 local Sound = require(script.Sound)
 local Responsive = require(script.Responsive)
 local TutorialController = require(script.TutorialController)
+local MusicController = require(script.MusicController)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -32,11 +33,13 @@ ClientState.start()
 Toasts.start(gui)
 App.start(gui)
 TutorialController.start(gui)
+MusicController.start()
 
--- Honor the player's SFX setting.
+-- Honor the player's audio settings.
 ClientState.onChanged(function(profile)
 	if profile and profile.Settings then
 		Sound.setEnabled(profile.Settings.Sfx ~= false)
+		MusicController.setEnabled(profile.Settings.Music ~= false)
 	end
 end)
 

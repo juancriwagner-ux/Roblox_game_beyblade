@@ -29,7 +29,11 @@ subir assets), así que el juego es jugable en cuanto lo sincronizas a Studio.
 - **UI completa**: HUD, colección con previews 3D en vivo, tienda, recompensa
   diaria y arena de batalla cinematográfica con cámara, choques y barras de
   resistencia.
-- **Persistencia** con DataStore (autosave + guardado al salir y al cerrar).
+- **Persistencia con session-locking** (estilo ProfileService): bloqueo por
+  sesión + heartbeat, robo seguro de locks muertos, autosave, guardado al salir
+  y cierre ordenado (`BindToClose`). Previene duplicación de ítems en saltos de
+  servidor sin dependencias externas.
+- **Música de fondo** con crossfade menú/batalla (cableada; faltan los IDs).
 - **Monetización** lista vía Developer Products (solo faltan tus IDs).
 
 ### 🏆 Sistemas competitivos y de retención
@@ -141,12 +145,13 @@ Beyblades nuevos edita `BeybladeData.lua`; para skins, `SkinData.lua`.
 
 ## 🚀 Roadmap sugerido (siguientes iteraciones)
 
-- Tabla de clasificación (OrderedDataStore) y temporadas con ranking.
-- Cofres/gacha con animación de apertura.
-- Mallas/texturas premium modeladas en Blender para los trompos top.
+- Pase de Temporada (Battle Pass) + temporadas con reset y ranking estacional.
+- Mallas/texturas premium modeladas en Blender / `generate_3d` para los top.
 - Eventos de jefe mundial y trompos de evento limitados.
-- Chat de equipo y batallas 2v2.
+- Chat de equipo y batallas 2v2 con espectador.
+- Subir las pistas de música y los assets premium ya generados (ver `assets/`).
 
-> ¿Migración a producción? Cambia el DataStore crudo de `DataService.lua` por
-> **ProfileService/ProfileStore** para session-locking (evita duplicación de
-> ítems en saltos de servidor). La API está pensada para que el cambio sea fácil.
+> **Datos de producción**: `DataService.lua` ya implementa session-locking con
+> heartbeat y robo seguro de locks muertos (el núcleo de ProfileService) sobre
+> `DataStoreService`, sin dependencias externas. Para escalar aún más se puede
+> migrar a ProfileStore manteniendo la misma API pública (`get/load/release/...`).

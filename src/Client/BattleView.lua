@@ -21,6 +21,7 @@ local ModelBuilder = require(Shared.ModelBuilder)
 local UITheme = require(script.Parent.UITheme)
 local ClientState = require(script.Parent.ClientState)
 local Sound = require(script.Parent.Sound)
+local MusicController = require(script.Parent.MusicController)
 
 local BattleView = {}
 
@@ -215,6 +216,7 @@ function BattleView.play(result: any, youAre: number, opponentName: string, rewa
 		return
 	end
 	playing = true
+	MusicController.setBattle(true)
 
 	local mine = (youAre == 1) and result.A or result.B
 	local theirs = (youAre == 1) and result.B or result.A
@@ -314,6 +316,7 @@ function BattleView.play(result: any, youAre: number, opponentName: string, rewa
 	modelTheirs:Destroy()
 	overlay:Destroy()
 	camera.CameraType = prevType
+	MusicController.setBattle(false)
 	playing = false
 end
 

@@ -1,15 +1,21 @@
 --!strict
 -- DataService.lua
--- Authoritative player profile store. Loads on join (with retries + template
--- merge), autosaves on an interval, saves on leave and on shutdown.
+-- Authoritative player profile store with SESSION LOCKING — the core safety
+-- mechanism behind ProfileService/ProfileStore, implemented directly on top of
+-- DataStoreService so there are no external dependencies.
 --
--- NOTE: For a production launch consider swapping the raw DataStore calls for
--- ProfileService/ProfileStore (session locking prevents item duplication on
--- server hops). The API below is intentionally small so that swap is easy.
+-- Why locking matters: when a player hops between servers (or rejoins fast),
+-- two servers can briefly hold the same profile. Without a lock, the older
+-- server's save can overwrite the newer one and DUPLICATE or ERASE items. Here,
+-- each load stamps a unique session lock + heartbeat; another server only takes
+-- over once the lock goes stale, and a server that loses its lock stops saving.
+--
+-- Stored shape per key: { data = <profile>, lock = { session, jobId, beat } }
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
@@ -20,12 +26,21 @@ local template = require(script.Parent.ProfileTemplate)
 
 local DataService = {}
 
-local STORE_NAME = "BeybladeProfiles_v1"
+local STORE_NAME = "BeybladeProfiles_v2"
 local store = DataStoreService:GetDataStore(STORE_NAME)
 local useStudioMock = RunService:IsStudio() -- avoid DataStore errors in solo test
 
+-- A lock older than this (seconds) is considered dead and may be stolen.
+local LOCK_TIMEOUT = 60
+-- How often we refresh our lock heartbeat + autosave.
+local HEARTBEAT = math.min(Config.AutoSaveInterval, 30)
+-- Attempts to acquire before force-stealing a (presumably crashed) lock.
+local ACQUIRE_ATTEMPTS = 6
+
 local profiles: { [Player]: any } = {}
+local sessions: { [Player]: string } = {}
 local loadedFlag: { [Player]: boolean } = {}
+local releasing: { [Player]: boolean } = {}
 
 -- Recursively fill missing keys from the template (never overwrite existing).
 local function reconcile(data: any, tmpl: any)
@@ -42,49 +57,82 @@ local function keyFor(player: Player): string
 	return "player_" .. tostring(player.UserId)
 end
 
-local function loadFromStore(player: Player): any
-	if useStudioMock then
-		return template()
-	end
-	local data
-	for attempt = 1, 4 do
-		local ok, result = pcall(function()
-			return store:GetAsync(keyFor(player))
-		end)
-		if ok then
-			data = result
-			break
-		else
-			warn(("[DataService] load attempt %d failed for %s: %s"):format(attempt, player.Name, tostring(result)))
-			task.wait(2 ^ attempt)
-		end
-	end
-	if data == nil then
-		data = template()
-	else
-		reconcile(data, template())
-	end
-	return data
-end
+-- ===== Locked DataStore primitives ====================================
 
-local function saveToStore(player: Player)
-	local data = profiles[player]
-	if not data or useStudioMock then
-		return
+-- Try to acquire the session lock and read the profile. Returns (data, ok).
+local function acquire(player: Player, sessionId: string): (any?, boolean)
+	if useStudioMock then
+		return template(), true
 	end
-	data.LastSeenUnix = os.time()
-	for attempt = 1, 4 do
+	local key = keyFor(player)
+	for attempt = 1, ACQUIRE_ATTEMPTS do
+		local steal = attempt == ACQUIRE_ATTEMPTS -- last resort: take a stale/stuck lock
+		local got = false
+		local loaded: any = nil
 		local ok, err = pcall(function()
-			store:UpdateAsync(keyFor(player), function()
-				return data
+			store:UpdateAsync(key, function(stored)
+				stored = stored or { data = nil, lock = nil }
+				local lock = stored.lock
+				local now = os.time()
+				local free = (not lock)
+					or (now - (lock.beat or 0) > LOCK_TIMEOUT)
+					or (lock.session == sessionId)
+				if free or steal then
+					stored.lock = { session = sessionId, jobId = game.JobId, beat = now }
+					got = true
+					loaded = stored.data
+					return stored
+				end
+				-- Locked by a live session: cancel, keep their data untouched.
+				got = false
+				return nil
 			end)
 		end)
-		if ok then
-			return
+		if ok and got then
+			local data = loaded or template()
+			reconcile(data, template())
+			return data, true
+		elseif not ok then
+			warn(("[DataService] acquire attempt %d failed for %s: %s"):format(attempt, player.Name, tostring(err)))
 		end
-		warn(("[DataService] save attempt %d failed for %s: %s"):format(attempt, player.Name, tostring(err)))
-		task.wait(2 ^ attempt)
+		task.wait(3)
 	end
+	return nil, false
+end
+
+-- Write current data and refresh our heartbeat, but only if we still own the
+-- lock. Returns false if the lock was lost (another server took over).
+local function commit(player: Player, finalize: boolean): boolean
+	local data = profiles[player]
+	local sessionId = sessions[player]
+	if not data or not sessionId or useStudioMock then
+		return true
+	end
+	data.LastSeenUnix = os.time()
+	local owned = true
+	local ok, err = pcall(function()
+		store:UpdateAsync(keyFor(player), function(stored)
+			stored = stored or { data = nil, lock = nil }
+			local lock = stored.lock
+			-- Only write if we own the lock (or it's gone stale and ours).
+			if lock and lock.session ~= sessionId and (os.time() - (lock.beat or 0) <= LOCK_TIMEOUT) then
+				owned = false
+				return nil -- someone else owns a live lock; don't clobber it
+			end
+			stored.data = data
+			if finalize then
+				stored.lock = nil -- release on leave
+			else
+				stored.lock = { session = sessionId, jobId = game.JobId, beat = os.time() }
+			end
+			return stored
+		end)
+	end)
+	if not ok then
+		warn(("[DataService] commit failed for %s: %s"):format(player.Name, tostring(err)))
+		return true -- transient error; keep the session, retry next beat
+	end
+	return owned
 end
 
 -- ===== Public API =====================================================
@@ -124,33 +172,56 @@ function DataService.push(player: Player)
 	end
 end
 
-function DataService.load(player: Player)
-	local data = loadFromStore(player)
+-- Acquire the lock and load the profile. Returns the profile, or nil if the
+-- lock could not be obtained (caller should kick the player).
+function DataService.load(player: Player): any?
+	local sessionId = HttpService:GenerateGUID(false)
+	local data, ok = acquire(player, sessionId)
+	if not ok or not data then
+		return nil
+	end
 	if data.FirstJoinUnix == 0 then
 		data.FirstJoinUnix = os.time()
 	end
 	profiles[player] = data
+	sessions[player] = sessionId
 	loadedFlag[player] = true
 	return data
 end
 
 function DataService.save(player: Player)
-	saveToStore(player)
+	commit(player, false)
 end
 
 function DataService.release(player: Player)
-	saveToStore(player)
+	if releasing[player] then
+		return
+	end
+	releasing[player] = true
+	commit(player, true) -- final save + clear lock
 	profiles[player] = nil
+	sessions[player] = nil
 	loadedFlag[player] = nil
+	releasing[player] = nil
 end
 
 function DataService.init()
-	-- Autosave loop.
+	-- Heartbeat: refresh locks + autosave. If a lock is lost, kick to protect
+	-- data integrity (another server now owns the profile).
 	task.spawn(function()
 		while true do
-			task.wait(Config.AutoSaveInterval)
+			task.wait(HEARTBEAT)
 			for player in profiles do
-				task.spawn(saveToStore, player)
+				task.spawn(function()
+					local stillOwned = commit(player, false)
+					if not stillOwned and player.Parent then
+						warn(("[DataService] lost lock for %s — kicking to protect data"):format(player.Name))
+						profiles[player] = nil
+						sessions[player] = nil
+						loadedFlag[player] = nil
+						player:Kick("Tu sesión se abrió en otro servidor. Vuelve a entrar.")
+					end
+				end)
 			end
 		end
 	end)
@@ -159,10 +230,14 @@ function DataService.init()
 		if useStudioMock then
 			return
 		end
+		local pending = {}
 		for player in profiles do
-			task.spawn(saveToStore, player)
+			table.insert(pending, player)
 		end
-		task.wait(3)
+		for _, player in pending do
+			task.spawn(DataService.release, player)
+		end
+		task.wait(5) -- give the writes time to flush before the server dies
 	end)
 end
 
