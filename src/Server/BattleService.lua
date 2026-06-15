@@ -84,7 +84,7 @@ local function makeBot(targetPower: number): any
 	return best
 end
 
-local function grantRewards(player: Player, won: boolean, oppTrophies: number)
+local function grantRewards(player: Player, won: boolean, oppTrophies: number, oppName: string, oppLoadout: any)
 	local p = DataService.get(player)
 	if not p then
 		return
@@ -107,6 +107,20 @@ local function grantRewards(player: Player, won: boolean, oppTrophies: number)
 		p.Stats.Streak = 0
 		EconomyService.add(player, "Bolts", Config.Rewards.BattleLoseBolts, true)
 	end
+
+	-- Battle history (newest first, capped at 15).
+	table.insert(p.History, 1, {
+		When = os.time(),
+		Won = won,
+		Opp = oppName,
+		MyBlade = p.Equipped.BladeId,
+		OppBlade = oppLoadout and oppLoadout.BladeId or nil,
+		Delta = delta,
+	})
+	while #p.History > 15 do
+		table.remove(p.History)
+	end
+
 	DataService.push(player)
 
 	-- Progression + quests.
@@ -132,17 +146,18 @@ local function runMatch(a: Ticket, b: Ticket)
 	local aWon = result.Winner == 1
 	local bWon = result.Winner == 2
 
+	local aOppName = b.player and b.player.DisplayName or ("🤖 " .. BOT_NAMES[rng:NextInteger(1, #BOT_NAMES)])
+	local bOppName = a.player and a.player.DisplayName or ("🤖 " .. BOT_NAMES[rng:NextInteger(1, #BOT_NAMES)])
+
 	if a.player then
 		inBattle[a.player] = false
-		grantRewards(a.player, aWon, b.trophies)
-		local oppName = b.player and b.player.DisplayName or ("🤖 " .. BOT_NAMES[rng:NextInteger(1, #BOT_NAMES)])
-		sendResult(a.player, result, 1, oppName, aWon)
+		grantRewards(a.player, aWon, b.trophies, aOppName, b.loadout)
+		sendResult(a.player, result, 1, aOppName, aWon)
 	end
 	if b.player then
 		inBattle[b.player] = false
-		grantRewards(b.player, bWon, a.trophies)
-		local oppName = a.player and a.player.DisplayName or ("🤖 " .. BOT_NAMES[rng:NextInteger(1, #BOT_NAMES)])
-		sendResult(b.player, result, 2, oppName, bWon)
+		grantRewards(b.player, bWon, a.trophies, bOppName, a.loadout)
+		sendResult(b.player, result, 2, bOppName, bWon)
 	end
 end
 

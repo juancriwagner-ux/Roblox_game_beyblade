@@ -23,6 +23,7 @@ local CodesService = require(script.CodesService)
 local LeaderboardService = require(script.LeaderboardService)
 local GachaService = require(script.GachaService)
 local SeasonService = require(script.SeasonService)
+local AchievementService = require(script.AchievementService)
 local Hub = require(script.Hub)
 
 -- ===== Boot =====
@@ -32,6 +33,7 @@ SpawnService.setCenter(gardenCenter)
 
 DataService.init()
 ProgressService.init()
+AchievementService.init()
 SpawnService.init()
 MonetizationService.init()
 LeaderboardService.init()

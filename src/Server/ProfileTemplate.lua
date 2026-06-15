@@ -38,6 +38,10 @@ local function template()
 		Settings = { Music = true, Sfx = true },
 		-- First-time user experience flag.
 		TutorialDone = false,
+		-- Unlocked achievements (id -> true).
+		Achievements = {} :: { [string]: boolean },
+		-- Recent battle history (newest first, capped).
+		History = {} :: { any },
 		-- Battle Pass / season state.
 		Season = {
 			Id = 0,

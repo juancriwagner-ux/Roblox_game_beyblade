@@ -57,6 +57,10 @@ subir assets), así que el juego es jugable en cuanto lo sincronizas a Studio.
   recompensas deterministas (incl. skins/blade de hito), pase premium comprable
   con Núcleos, XP alimentada por todo el juego y **rotación mensual automática**
   (cada mes natural es una temporada nueva con reset).
+- **Logros + Badges**: 14 logros con desbloqueo automático y recompensas; otorga
+  **Badges reales de Roblox** (solo pega tus BadgeIds). Panel de **Perfil** con
+  estadísticas de por vida, progreso de logros e **historial de combate** (últimas
+  15 batallas con rival, blade y cambio de trofeos).
 
 ---
 

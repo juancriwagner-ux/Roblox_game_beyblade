@@ -17,6 +17,7 @@ local SkinData = require(Shared.SkinData)
 local RankData = require(Shared.RankData)
 local CrateData = require(Shared.CrateData)
 local SeasonData = require(Shared.SeasonData)
+local AchievementData = require(Shared.AchievementData)
 
 local Assets = require(Shared.Assets)
 
@@ -512,6 +513,82 @@ local function buildSeason(scroll: ScrollingFrame)
 	end
 end
 
+-- ===== Profile: stats + achievements + history ========================
+local function buildProfile(scroll: ScrollingFrame)
+	for _, c in scroll:GetChildren() do
+		c:Destroy()
+	end
+	local profile = ClientState.get()
+	if not profile then
+		return
+	end
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 8)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = scroll
+
+	-- Lifetime stats card.
+	local st = profile.Stats
+	local total = st.Wins + st.Losses
+	local winrate = total > 0 and math.floor(st.Wins / total * 100) or 0
+	local rank = RankData.forTrophies(profile.Trophies or 0)
+	local stats = UITheme.frame({ Size = UDim2.new(1, -6, 0, 96), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = 0 }, scroll)
+	UITheme.corner(14, stats)
+	UITheme.stroke(rank.Color, 2.5, stats)
+	UITheme.label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.new(0, 14, 0, 10), Text = ("%s Liga %s · Nivel %d"):format(rank.Icon, rank.Name, profile.Level or 1), TextColor3 = rank.Color, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left }, stats)
+	local line1 = ("🏆 %d  ·  Victorias %d  ·  Derrotas %d  ·  Winrate %d%%"):format(profile.PeakTrophies or 0, st.Wins, st.Losses, winrate)
+	local line2 = ("Mejor racha %d  ·  Recolectados %d  ·  Batallas %d"):format(st.BestStreak, st.Collected, st.Battles)
+	UITheme.label({ Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 14, 0, 40), Text = line1, TextColor3 = UITheme.Color.Text, Font = UITheme.FontRegular, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, stats)
+	UITheme.label({ Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 14, 0, 64), Text = line2, TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, stats)
+
+	-- Achievements.
+	local unlocked = 0
+	for _, id in AchievementData.Order do
+		if profile.Achievements and profile.Achievements[id] then
+			unlocked += 1
+		end
+	end
+	UITheme.label({ Size = UDim2.new(1, -6, 0, 24), Text = ("🏅 Logros  (%d/%d)"):format(unlocked, #AchievementData.Order), TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = 1 }, scroll)
+
+	for i, id in AchievementData.Order do
+		local ach = AchievementData.get(id)
+		if not ach then
+			continue
+		end
+		local done = profile.Achievements and profile.Achievements[id]
+		local value = AchievementData.metricValue(profile, ach.Metric)
+		local row = UITheme.frame({ Size = UDim2.new(1, -6, 0, 56), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = 1 + i }, scroll)
+		UITheme.corner(10, row)
+		UITheme.stroke(done and UITheme.Color.Good or UITheme.Color.Stroke, done and 2 or 1, row)
+		UITheme.label({ Size = UDim2.new(0, 44, 1, 0), Position = UDim2.new(0, 8, 0, 0), Text = ach.Icon, TextSize = 26 }, row)
+		UITheme.label({ Size = UDim2.new(1, -200, 0, 20), Position = UDim2.new(0, 56, 0, 8), Text = ach.Name, TextSize = 15, TextColor3 = done and UITheme.Color.Good or UITheme.Color.Text, TextXAlignment = Enum.TextXAlignment.Left }, row)
+		UITheme.label({ Size = UDim2.new(1, -200, 0, 18), Position = UDim2.new(0, 56, 0, 30), Text = ach.Desc, TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left }, row)
+		-- Reward + progress.
+		local rwd = ("⚙%d%s"):format(ach.Bolts, ach.Cores > 0 and (" ◆" .. ach.Cores) or "")
+		UITheme.label({ Size = UDim2.new(0, 130, 0, 18), Position = UDim2.new(1, -144, 0, 8), Text = done and "✓ Desbloqueado" or rwd, TextColor3 = done and UITheme.Color.Good or UITheme.Color.Bolts, Font = UITheme.FontRegular, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right }, row)
+		UITheme.label({ Size = UDim2.new(0, 130, 0, 16), Position = UDim2.new(1, -144, 0, 30), Text = ("%d/%d"):format(math.min(value, ach.Threshold), ach.Threshold), TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right }, row)
+	end
+
+	-- Battle history.
+	UITheme.label({ Size = UDim2.new(1, -6, 0, 24), Text = "📜 Historial reciente", TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = 200 }, scroll)
+	if not profile.History or #profile.History == 0 then
+		UITheme.label({ Size = UDim2.new(1, -6, 0, 26), Text = "Aún no has combatido. ¡A la arena!", TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = 201 }, scroll)
+	else
+		for i, h in profile.History do
+			local myDef = BeybladeData.get(h.MyBlade)
+			local row = UITheme.frame({ Size = UDim2.new(1, -6, 0, 36), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = 201 + i }, scroll)
+			UITheme.corner(8, row)
+			local color = h.Won and UITheme.Color.Good or UITheme.Color.Bad
+			UITheme.stroke(color, 1.5, row)
+			UITheme.label({ Size = UDim2.new(0, 34, 1, 0), Position = UDim2.new(0, 8, 0, 0), Text = h.Won and "V" or "D", TextColor3 = color, TextSize = 18 }, row)
+			UITheme.label({ Size = UDim2.new(1, -200, 1, 0), Position = UDim2.new(0, 46, 0, 0), Text = ("vs %s  ·  %s"):format(h.Opp, myDef and myDef.Name or h.MyBlade), TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, row)
+			local ago = math.max(0, os.time() - (h.When or os.time()))
+			UITheme.label({ Size = UDim2.new(0, 70, 1, 0), Position = UDim2.new(1, -150, 0, 0), Text = (h.Delta and h.Delta >= 0 and "+" or "") .. tostring(h.Delta or 0) .. "🏆", TextColor3 = (h.Delta or 0) >= 0 and UITheme.Color.Good or UITheme.Color.Bad, Font = UITheme.FontRegular, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right }, row)
+			UITheme.label({ Size = UDim2.new(0, 70, 1, 0), Position = UDim2.new(1, -78, 0, 0), Text = "hace " .. Util.duration(ago), TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right }, row)
+		end
+	end
+end
+
 -- ===== Quests =========================================================
 local function buildQuests(scroll: ScrollingFrame)
 	for _, c in scroll:GetChildren() do
@@ -713,9 +790,9 @@ function App.start(screenGui: ScreenGui)
 	buildHud()
 
 	-- Navigation dock (left side, below the HUD, grows downward).
-	local dock = UITheme.frame({ Name = "Dock", BackgroundTransparency = 1, Size = UDim2.new(0, 160, 0, 540), Position = UDim2.new(0, 16, 0, 104) }, gui)
+	local dock = UITheme.frame({ Name = "Dock", BackgroundTransparency = 1, Size = UDim2.new(0, 160, 0, 600), Position = UDim2.new(0, 16, 0, 104) }, gui)
 	local dl = Instance.new("UIListLayout")
-	dl.Padding = UDim.new(0, 9)
+	dl.Padding = UDim.new(0, 8)
 	dl.Parent = dock
 
 	-- Panels.
@@ -726,6 +803,7 @@ function App.start(screenGui: ScreenGui)
 	local _, questScroll = makePanel("Quests", "🎯  Misiones Diarias")
 	local _, rankScroll = makePanel("Ranking", "🏆  Ranking")
 	local _, seasonScroll = makePanel("Season", "🏅  Pase de Temporada")
+	local _, profileScroll = makePanel("Profile", "🎖️  Perfil")
 	local _, extrasScroll = makePanel("Extras", "🎟️  Códigos y Ajustes")
 
 	dockButton("🎒  Colección", 2, dock, function()
@@ -756,7 +834,11 @@ function App.start(screenGui: ScreenGui)
 		buildDaily(dailyScroll)
 		openPanel("Daily")
 	end)
-	dockButton("🎟️  Extras", 9, dock, function()
+	dockButton("🎖️  Perfil", 9, dock, function()
+		buildProfile(profileScroll)
+		openPanel("Profile")
+	end)
+	dockButton("🎟️  Extras", 10, dock, function()
 		buildExtras(extrasScroll)
 		openPanel("Extras")
 	end)
@@ -803,6 +885,9 @@ function App.start(screenGui: ScreenGui)
 		end
 		if panels.Season.Visible then
 			buildSeason(seasonScroll)
+		end
+		if panels.Profile.Visible then
+			buildProfile(profileScroll)
 		end
 	end)
 end
