@@ -28,16 +28,16 @@ porque el entorno bloquea el dominio de descarga del CDN). Para verlas/descargar
 | **Logo wordmark** "BEYBLADE ARENA" | `Logo` | Cabecera del HUD | `bb6efbeb-dace-4e2e-ba30-79b720f975f8` |
 | **Ícono del juego** | `Icon` | Ícono en la página de Roblox | `11632a65-daab-4608-80db-e278ad8ad74e` |
 | **Key art / thumbnail** | `KeyArt` | Portada/thumbnail del juego | `672d4789-fdef-4f06-830b-d821f5bc9064` |
-| **Ícono moneda Tuercas** (engranaje dorado) | `BoltsIcon` | Pill de moneda en HUD | `be5bef73-...` (sheet) |
-| **Ícono moneda Núcleos** (cristal cian) | `CoresIcon` | Pill de moneda en HUD | `be5bef73-...` (sheet) |
+| **Ícono moneda Tuercas** (engranaje dorado) | `BoltsIcon` | Pill de moneda en HUD | `36e1ee5b-6314-49ae-9c8b-083867970e46` |
+| **Ícono moneda Núcleos** (cristal cian) | `CoresIcon` | Pill de moneda en HUD | `37bf19bd-f64c-4850-b04d-6da594102fe9` |
 | **Celestial Prime** (mítico) | `Blade_celestial_prime` | Splash art de tienda/colección | `8bf79d03-edb6-4514-b19e-ea17085e3331` |
 | **Void Reaper** (legendario) | `Blade_void_reaper` | Splash art | `d3b3177a-8917-4f9a-9ff6-c569780f0f33` |
 | **Magma Core** (épico) | `Blade_magma_core` | Splash art | `0bcc2db7-b98a-4256-819d-8917037bd999` |
 | **Eternal Halo** (legendario) | `Blade_eternal_halo` | Splash art | `a56b356f-8a0b-4b99-bb7f-c0bcee235dd5` |
 
-> El **icono de monedas** se generó como una lámina con las dos monedas juntas.
-> Recórtala en dos PNG (Tuercas / Núcleos) antes de subirlas, o regenérala como
-> dos imágenes separadas si prefieres.
+> Los íconos de moneda ahora son **dos imágenes separadas** (engranaje dorado y
+> cristal cian), listas para subir tal cual. La lámina combinada original
+> (`be5bef73-…`) queda obsoleta.
 
 ## 🎭 Skins (renders premium)
 
@@ -73,20 +73,22 @@ Ya están cableados en el juego (no-op hasta que pegues los IDs).
 > Para audio importado, Roblox puede requerir aprobación de moderación antes de
 > que el ID sea reproducible.
 
-## 🎵 Música de fondo (pendiente de generar)
+## 🎵 Música de fondo ✅ generada
 
 Cableada en el juego (`MusicController` + `Assets.Music`), con crossfade entre
-el tema del menú y el de batalla y respeto al ajuste de Música. Falta generar
-las pistas (el acceso de generación estaba bloqueado por aprobación). Genéralas
-con `sonilo_music` (~60 s, loop) y pega los IDs en `Assets.Music`:
+el tema del menú y el de batalla y respeto al ajuste de Música. Las dos pistas
+ya están **generadas** con `sonilo_music` (60 s, loop, instrumental). Están en
+tu cuenta de Higgsfield (audio `.m4a`); descárgalas, súbelas a Roblox y pega
+los IDs en `Assets.Music`.
 
-| Pista | Clave | Prompt sugerido |
-|---|---|---|
-| **Menú/Hub** | `Menu` | "Energetic upbeat electronic menu theme, futuristic arcade, driving synth arpeggios, punchy drums, heroic, seamless loop, no vocals" |
-| **Batalla** | `Battle` | "Intense fast electronic battle theme, aggressive bass, epic percussion, rising tension, esports hype, seamless loop, no vocals" |
+| Pista | Clave en `Assets.lua` | Cuándo suena | job id |
+|---|---|---|---|
+| **Menú/Hub** | `Menu` | En el lobby/colección/tienda | `d0881397-2379-46da-a097-63728ff1a7ef` |
+| **Batalla** | `Battle` | Durante el combate (crossfade) | `f7b13d5f-9b6d-40e6-a7c5-d7ad8ce50276` |
 
-> Súbelas en *Asset Manager → Audio → Import* (puede requerir moderación) y pega
-> los IDs en `src/Shared/Assets.lua` → `Assets.Music`.
+> Descárgalas desde Higgsfield → *Generations* (o pide a Claude `show_generations`
+> con type `audio`). Súbelas en *Asset Manager → Audio → Import* (puede requerir
+> moderación) y pega los IDs en `src/Shared/Assets.lua` → `Assets.Music`.
 
 ## 🔁 Regenerar o ampliar
 

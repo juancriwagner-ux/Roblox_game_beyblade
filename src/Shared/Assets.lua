@@ -20,9 +20,9 @@ Assets.Images = {
 	Icon = "rbxassetid://0", -- game_icon — set as the game's icon on the site
 	KeyArt = "rbxassetid://0", -- key_art — set as the game's thumbnail on the site
 
-	-- Currency icons (top HUD pills)
-	BoltsIcon = "rbxassetid://0", -- golden gear/bolt coin
-	CoresIcon = "rbxassetid://0", -- cyan energy core crystal
+	-- Currency icons (top HUD pills) — generated as two separate images
+	BoltsIcon = "rbxassetid://0", -- golden gear/bolt coin (job 36e1ee5b-6314-49ae-9c8b-083867970e46)
+	CoresIcon = "rbxassetid://0", -- cyan energy core crystal (job 37bf19bd-f64c-4850-b04d-6da594102fe9)
 
 	-- Hero blade renders (optional splash art in the collection detail / shop)
 	Blade_celestial_prime = "rbxassetid://0",
@@ -59,10 +59,11 @@ function Assets.sound(key: string): string?
 	return nil
 end
 
--- Background music tracks. Upload each to Roblox (Audio) and paste the ID.
+-- Background music tracks (generated with sonilo_music, 60s seamless loops).
+-- Download from Higgsfield, upload to Roblox (Audio) and paste the ID here.
 Assets.Music = {
-	Menu = "rbxassetid://0", -- hub / menu loop
-	Battle = "rbxassetid://0", -- intense battle loop
+	Menu = "rbxassetid://0", -- hub / menu loop (job d0881397-2379-46da-a097-63728ff1a7ef)
+	Battle = "rbxassetid://0", -- intense battle loop (job f7b13d5f-9b6d-40e6-a7c5-d7ad8ce50276)
 }
 
 function Assets.music(key: string): string?
