@@ -13,6 +13,8 @@ local App = require(script.App)
 local Toasts = require(script.Toasts)
 local BattleView = require(script.BattleView)
 local Sound = require(script.Sound)
+local Responsive = require(script.Responsive)
+local TutorialController = require(script.TutorialController)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -25,9 +27,11 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.IgnoreGuiInset = true
 gui.Parent = playerGui
 
+Responsive.start(gui)
 ClientState.start()
 Toasts.start(gui)
 App.start(gui)
+TutorialController.start(gui)
 
 -- Honor the player's SFX setting.
 ClientState.onChanged(function(profile)

@@ -15,12 +15,14 @@ local RarityData = require(Shared.RarityData)
 local CategoryData = require(Shared.CategoryData)
 local SkinData = require(Shared.SkinData)
 local RankData = require(Shared.RankData)
+local CrateData = require(Shared.CrateData)
 
 local Assets = require(Shared.Assets)
 
 local UITheme = require(script.Parent.UITheme)
 local ClientState = require(script.Parent.ClientState)
 local ViewportPreview = require(script.Parent.ViewportPreview)
+local GachaView = require(script.Parent.GachaView)
 
 local App = {}
 
@@ -348,6 +350,63 @@ local function buildDaily(scroll: ScrollingFrame)
 	end)
 end
 
+-- ===== Crates / Gacha =================================================
+local function buildGacha(scroll: ScrollingFrame)
+	for _, c in scroll:GetChildren() do
+		c:Destroy()
+	end
+	local profile = ClientState.get()
+	if not profile then
+		return
+	end
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 12)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = scroll
+
+	for i, crateId in CrateData.Order do
+		local crate = CrateData.get(crateId)
+		if not crate then
+			continue
+		end
+		local curColor = crate.Currency == "Cores" and UITheme.Color.Cores or UITheme.Color.Bolts
+		local canAfford = (profile.Currencies[crate.Currency] or 0) >= crate.Price
+
+		local card = UITheme.frame({ Size = UDim2.new(1, -6, 0, 110), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = i }, scroll)
+		UITheme.corner(14, card)
+		UITheme.stroke(crate.Color, 2.5, card)
+		-- Glowing crate emblem.
+		local emblem = UITheme.frame({ Size = UDim2.new(0, 78, 0, 78), Position = UDim2.new(0, 16, 0.5, -39), BackgroundColor3 = crate.Color }, card)
+		UITheme.corner(14, emblem)
+		UITheme.label({ Size = UDim2.new(1, 0, 1, 0), Text = "🎁", TextSize = 40 }, emblem)
+
+		UITheme.label({ Size = UDim2.new(1, -260, 0, 26), Position = UDim2.new(0, 108, 0, 16), Text = crate.Name, TextColor3 = crate.Color, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left }, card)
+		UITheme.label({
+			Size = UDim2.new(1, -260, 0, 44), Position = UDim2.new(0, 108, 0, 44), Text = crate.Desc,
+			TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 14,
+			TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true,
+		}, card)
+
+		local btn = UITheme.button({
+			Size = UDim2.new(0, 132, 0, 48), Position = UDim2.new(1, -148, 0.5, -24),
+			Text = ("Abrir\n%s %d"):format(crate.Currency == "Cores" and "◆" or "⚙", crate.Price),
+			TextSize = 15, BackgroundColor3 = canAfford and curColor or UITheme.Color.PanelLight,
+			TextColor3 = canAfford and UITheme.Color.BG or UITheme.Color.SubText,
+		}, card)
+		btn.AutoButtonColor = canAfford
+		UITheme.corner(10, btn)
+		btn.MouseButton1Click:Connect(function()
+			if GachaView.isBusy() then
+				return
+			end
+			local res = (Net.get("OpenCrate") :: RemoteFunction):InvokeServer(crateId)
+			if res and res.ok then
+				GachaView.play(crate, res, gui)
+			end
+		end)
+	end
+end
+
 -- ===== Quests =========================================================
 local function buildQuests(scroll: ScrollingFrame)
 	for _, c in scroll:GetChildren() do
@@ -549,7 +608,7 @@ function App.start(screenGui: ScreenGui)
 	buildHud()
 
 	-- Navigation dock (left side, below the HUD, grows downward).
-	local dock = UITheme.frame({ Name = "Dock", BackgroundTransparency = 1, Size = UDim2.new(0, 160, 0, 400), Position = UDim2.new(0, 16, 0, 104) }, gui)
+	local dock = UITheme.frame({ Name = "Dock", BackgroundTransparency = 1, Size = UDim2.new(0, 160, 0, 460), Position = UDim2.new(0, 16, 0, 104) }, gui)
 	local dl = Instance.new("UIListLayout")
 	dl.Padding = UDim.new(0, 10)
 	dl.Parent = dock
@@ -557,6 +616,7 @@ function App.start(screenGui: ScreenGui)
 	-- Panels.
 	local _, colScroll = makePanel("Collection", "🎒  Colección")
 	local _, shopScroll = makePanel("Shop", "🛒  Tienda de Skins")
+	local _, crateScroll = makePanel("Crates", "📦  Cofres")
 	local _, dailyScroll = makePanel("Daily", "🎁  Recompensa Diaria")
 	local _, questScroll = makePanel("Quests", "🎯  Misiones Diarias")
 	local _, rankScroll = makePanel("Ranking", "🏆  Ranking")
@@ -566,23 +626,27 @@ function App.start(screenGui: ScreenGui)
 		buildCollection(colScroll)
 		openPanel("Collection")
 	end)
-	dockButton("🎯  Misiones", 3, dock, function()
+	dockButton("📦  Cofres", 3, dock, function()
+		buildGacha(crateScroll)
+		openPanel("Crates")
+	end)
+	dockButton("🎯  Misiones", 4, dock, function()
 		buildQuests(questScroll)
 		openPanel("Quests")
 	end)
-	dockButton("🏆  Ranking", 4, dock, function()
+	dockButton("🏆  Ranking", 5, dock, function()
 		buildRanking(rankScroll)
 		openPanel("Ranking")
 	end)
-	dockButton("🛒  Tienda", 5, dock, function()
+	dockButton("🛒  Tienda", 6, dock, function()
 		buildShop(shopScroll)
 		openPanel("Shop")
 	end)
-	dockButton("🎁  Diario", 6, dock, function()
+	dockButton("🎁  Diario", 7, dock, function()
 		buildDaily(dailyScroll)
 		openPanel("Daily")
 	end)
-	dockButton("🎟️  Extras", 7, dock, function()
+	dockButton("🎟️  Extras", 8, dock, function()
 		buildExtras(extrasScroll)
 		openPanel("Extras")
 	end)
@@ -623,6 +687,9 @@ function App.start(screenGui: ScreenGui)
 		end
 		if panels.Extras.Visible then
 			buildExtras(extrasScroll)
+		end
+		if panels.Crates.Visible then
+			buildGacha(crateScroll)
 		end
 	end)
 end

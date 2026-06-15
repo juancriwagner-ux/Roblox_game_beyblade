@@ -21,6 +21,7 @@ local ProgressService = require(script.ProgressService)
 local QuestService = require(script.QuestService)
 local CodesService = require(script.CodesService)
 local LeaderboardService = require(script.LeaderboardService)
+local GachaService = require(script.GachaService)
 local Hub = require(script.Hub)
 
 -- ===== Boot =====
@@ -135,6 +136,30 @@ onInvoke("ClaimQuest", function(player, questId)
 		return { ok = false }
 	end
 	return QuestService.claim(player, questId)
+end)
+
+onInvoke("OpenCrate", function(player, crateId)
+	if typeof(crateId) ~= "string" then
+		return { ok = false }
+	end
+	return GachaService.open(player, crateId)
+end)
+
+onInvoke("CompleteTutorial", function(player)
+	local p = DataService.get(player)
+	if not p then
+		return { ok = false }
+	end
+	if p.TutorialDone then
+		return { ok = false, reason = "done" }
+	end
+	p.TutorialDone = true
+	-- Onboarding reward.
+	EconomyService.add(player, "Bolts", 750, true)
+	EconomyService.add(player, "Cores", 10, true)
+	DataService.push(player)
+	;(Net.get("Notify") :: RemoteEvent):FireClient(player, "🎁 Regalo de bienvenida: +750 Tuercas, +10 Núcleos", "success")
+	return { ok = true, reward = { Bolts = 750, Cores = 10 } }
 end)
 
 onInvoke("SaveSettings", function(player, settings)

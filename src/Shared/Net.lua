@@ -23,6 +23,8 @@ Net.Definitions = {
 	RedeemCode = "Function", -- (code) -> { ok, reason?, reward? }
 	ClaimQuest = "Function", -- (questId) -> { ok, reward? }
 	SaveSettings = "Function", -- (settings) -> ok
+	OpenCrate = "Function", -- (crateId) -> { ok, bladeId?, rarity?, reason? }
+	CompleteTutorial = "Function", -- () -> { ok, reward? }
 
 	-- Server -> Client (Events)
 	ProfileUpdated = "Event", -- (profile)

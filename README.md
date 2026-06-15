@@ -44,6 +44,11 @@ subir assets), así que el juego es jugable en cuanto lo sincronizas a Studio.
 - **Códigos canjeables** (server-side, anti-datamine) para lanzamiento/creadores.
 - **Ajustes** (música/sonido) persistidos por jugador.
 - **Anti-exploit**: rate-limiting por jugador y por remote en todos los handlers.
+- **Cofres / Gacha**: 3 cofres (Inicial/Premium/Élite) con sesgo de rareza y
+  piso garantizado, con animación cinematográfica de apertura y revelado.
+- **Tutorial (FTUE)**: secuencia guiada de bienvenida en la primera partida con
+  regalo de onboarding; se marca en el perfil para no repetirse.
+- **UI responsive**: escalado global automático para móvil/tablet/PC.
 
 ---
 

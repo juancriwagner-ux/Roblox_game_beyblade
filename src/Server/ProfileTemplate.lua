@@ -36,6 +36,8 @@ local function template()
 		Codes = {} :: { [string]: boolean },
 		-- Client settings.
 		Settings = { Music = true, Sfx = true },
+		-- First-time user experience flag.
+		TutorialDone = false,
 		FirstJoinUnix = 0,
 		LastSeenUnix = 0,
 	}
