@@ -25,6 +25,7 @@ local UITheme = require(script.Parent.UITheme)
 local ClientState = require(script.Parent.ClientState)
 local ViewportPreview = require(script.Parent.ViewportPreview)
 local GachaView = require(script.Parent.GachaView)
+local BattleView = require(script.Parent.BattleView)
 
 local App = {}
 
@@ -843,9 +844,9 @@ function App.start(screenGui: ScreenGui)
 		openPanel("Extras")
 	end)
 
-	-- Big battle button (bottom centre).
+	-- Big battle button (bottom centre) = 1v1.
 	battleButton = UITheme.button({
-		Size = UDim2.new(0, 280, 0, 64), Position = UDim2.new(0.5, -140, 1, -84),
+		Size = UDim2.new(0, 260, 0, 64), Position = UDim2.new(0.5, -130, 1, -84),
 		Text = "⚔️  BATALLAR", TextSize = 24, BackgroundColor3 = UITheme.Color.Bad, TextColor3 = UITheme.Color.Text,
 	}, gui)
 	UITheme.corner(16, battleButton)
@@ -858,6 +859,46 @@ function App.start(screenGui: ScreenGui)
 		local res = (Net.get("StartBattle") :: RemoteFunction):InvokeServer()
 		if not res or not res.ok then
 			App.setBattleSearching(false)
+		end
+	end)
+
+	-- 2v2 button (right of the main button).
+	local team = UITheme.button({
+		Size = UDim2.new(0, 120, 0, 64), Position = UDim2.new(0.5, 140, 1, -84),
+		Text = "👥 2v2", TextSize = 20, BackgroundColor3 = UITheme.Color.Accent2, TextColor3 = UITheme.Color.Text,
+	}, gui)
+	UITheme.corner(16, team)
+	UITheme.stroke(UITheme.Color.Accent2, 2.5, team)
+	team.MouseButton1Click:Connect(function()
+		if searching or BattleView.isPlaying() then
+			return
+		end
+		App.setBattleSearching(true)
+		local res = (Net.get("StartTeamBattle") :: RemoteFunction):InvokeServer()
+		if not res or not res.ok then
+			App.setBattleSearching(false)
+		end
+	end)
+
+	-- Spectate button (left of the main button).
+	local spectate = UITheme.button({
+		Size = UDim2.new(0, 120, 0, 64), Position = UDim2.new(0.5, -262, 1, -84),
+		Text = "👁️ Ver", TextSize = 20, BackgroundColor3 = UITheme.Color.PanelLight, TextColor3 = UITheme.Color.Text,
+	}, gui)
+	UITheme.corner(16, spectate)
+	UITheme.stroke(UITheme.Color.Accent, 2, spectate)
+	spectate.MouseButton1Click:Connect(function()
+		if BattleView.isPlaying() then
+			return
+		end
+		local res = (Net.get("SpectateBattle") :: RemoteFunction):InvokeServer()
+		if res and res.ok and res.payload then
+			BattleView.playTeam(res.payload, 1, nil, gui, true)
+		else
+			spectate.Text = "Sin batallas"
+			task.delay(1.6, function()
+				spectate.Text = "👁️ Ver"
+			end)
 		end
 	end)
 

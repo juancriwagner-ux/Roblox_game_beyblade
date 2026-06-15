@@ -27,10 +27,13 @@ Net.Definitions = {
 	CompleteTutorial = "Function", -- () -> { ok, reward? }
 	ClaimSeasonReward = "Function", -- (tier, track) -> { ok, reward? }
 	BuyPremiumPass = "Function", -- () -> { ok, reason? }
+	StartTeamBattle = "Function", -- () -> { ok, matched? }  (2v2)
+	SpectateBattle = "Function", -- () -> live battle payload | { ok=false }
 
 	-- Server -> Client (Events)
 	ProfileUpdated = "Event", -- (profile)
-	BattleResult = "Event", -- (result, rewards, opponentName)
+	BattleResult = "Event", -- (result, youAre, opponentName, rewards)
+	TeamBattleResult = "Event", -- (payload, youTeam, rewards)  (2v2)
 	Notify = "Event", -- (text, kind)
 	SpawnCollected = "Event", -- (bladeId, rarity)  feedback popup
 }

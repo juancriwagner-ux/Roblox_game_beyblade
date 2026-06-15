@@ -49,4 +49,10 @@ end)
 	BattleView.play(result, youAre, opponentName, rewards, gui)
 end)
 
+-- Authoritative 2v2 result -> play the team clash.
+;(Net.get("TeamBattleResult") :: RemoteEvent).OnClientEvent:Connect(function(payload, youTeam, rewards)
+	App.setBattleSearching(false)
+	BattleView.playTeam(payload, youTeam, rewards, gui, false)
+end)
+
 print("[BeybladeArena] Client ready.")

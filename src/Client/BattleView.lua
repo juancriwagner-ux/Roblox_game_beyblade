@@ -320,4 +320,179 @@ function BattleView.play(result: any, youAre: number, opponentName: string, rewa
 	playing = false
 end
 
+-- ===== Team battles (2v2) + spectator =================================
+-- Generic renderer for N blades per side. Drives the unified payload produced
+-- by the server (also used for 1v1 spectating, with one blade per side).
+
+local function sumList(t: { number }): number
+	local s = 0
+	for _, v in t do
+		s += v
+	end
+	return s
+end
+
+local function teamMax(blades: { any }): number
+	local m = 0
+	for _, b in blades do
+		local st = BeybladeData.effectiveStats(b.BladeId, b.Rarity)
+		m += st and st.Stamina or 1
+	end
+	return math.max(1, m)
+end
+
+local function zOffsets(n: number): { number }
+	if n <= 1 then
+		return { 0 }
+	end
+	return { -4.5, 4.5 }
+end
+
+local function buildTeamOverlay(gui: ScreenGui, nameA: string, nameB: string, header: string)
+	local holder = UITheme.frame({ Name = "TeamOverlay", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0) }, gui)
+	local function bar(side: number, name: string, color: Color3): Frame
+		local x = side < 0 and UDim2.new(0, 24, 0, 24) or UDim2.new(1, -344, 0, 24)
+		local frame = UITheme.frame({ Size = UDim2.new(0, 320, 0, 56), Position = x }, holder)
+		UITheme.corner(10, frame)
+		UITheme.stroke(color, 2, frame)
+		UITheme.label({
+			Size = UDim2.new(1, -16, 0, 22), Position = UDim2.new(0, 10, 0, 6), Text = name, TextColor3 = color, TextSize = 15,
+			TextXAlignment = side < 0 and Enum.TextXAlignment.Left or Enum.TextXAlignment.Right,
+		}, frame)
+		local track = UITheme.frame({ Size = UDim2.new(1, -20, 0, 14), Position = UDim2.new(0, 10, 0, 34), BackgroundColor3 = UITheme.Color.BG }, frame)
+		UITheme.corner(7, track)
+		local fill = UITheme.frame({ Name = "Fill", Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = color }, track)
+		UITheme.corner(7, fill)
+		return fill
+	end
+	local center = UITheme.label({ Name = "Round", Size = UDim2.new(0, 360, 0, 40), Position = UDim2.new(0.5, -180, 0, 28), Text = header, TextSize = 26, TextColor3 = UITheme.Color.Accent }, holder)
+	return holder, bar(-1, nameA, UITheme.Color.Accent), bar(1, nameB, UITheme.Color.Accent2), center
+end
+
+function BattleView.playTeam(payload: any, youTeam: number, rewards: any?, gui: ScreenGui, spectator: boolean?)
+	if playing then
+		return
+	end
+	playing = true
+	MusicController.setBattle(true)
+
+	-- "Mine" = the side this client is on (SideA for spectators).
+	local mineSide = (youTeam == 1) and payload.SideA or payload.SideB
+	local foeSide = (youTeam == 1) and payload.SideB or payload.SideA
+	local mineMax = teamMax(mineSide.Blades)
+	local foeMax = teamMax(foeSide.Blades)
+
+	-- Build models for each side.
+	local function buildModels(blades: { any }, baseX: number): { Model }
+		local models = {}
+		local offs = zOffsets(#blades)
+		for i, b in blades do
+			local m = ModelBuilder.build({ BladeId = b.BladeId, Rarity = b.Rarity, Scale = 2.0, Anchored = true, WithAura = true })
+			ModelBuilder.addSpinTrail(m, RarityData.Tiers[b.Rarity].Color)
+			m.Parent = Workspace
+			m:PivotTo(CFrame.new(ARENA + Vector3.new(baseX, 8, offs[i])))
+			table.insert(models, m)
+		end
+		return models
+	end
+	local mineModels = buildModels(mineSide.Blades, -24)
+	local foeModels = buildModels(foeSide.Blades, 24)
+
+	local spinner = makeSpinner()
+	for _, m in mineModels do
+		spinner.add(m, 38)
+	end
+	for _, m in foeModels do
+		spinner.add(m, -38)
+	end
+
+	-- Cinematic camera.
+	local prevType = camera.CameraType
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.CFrame = CFrame.new(ARENA + Vector3.new(0, 24, 46), ARENA)
+
+	local header = spectator and "👁️ ESPECTANDO" or "¡EQUIPOS LISTOS!"
+	local overlay, fillMine, fillFoe, roundLabel = buildTeamOverlay(gui, mineSide.Name, foeSide.Name, header)
+	setBar(fillMine, 1)
+	setBar(fillFoe, 1)
+
+	-- Helper: move a group of models to x (keeping their z), over time.
+	local function moveGroup(models: { Model }, x: number, time: number)
+		for _, m in models do
+			local z = m:GetPivot().Position.Z
+			task.spawn(function()
+				moveTo(m, ARENA + Vector3.new(x, 0, z), time)
+			end)
+		end
+		task.wait(time)
+	end
+
+	-- Launch in.
+	Sound.play("Launch", 0.7)
+	Sound.startLoop("Spin", 0.35)
+	task.spawn(function() moveGroup(mineModels, -8, 0.6) end)
+	moveGroup(foeModels, 8, 0.6)
+	task.wait(0.3)
+
+	-- Replay rounds.
+	for _, round in payload.Rounds do
+		roundLabel.Text = ("RONDA %d"):format(round.Index)
+		task.spawn(function() moveGroup(mineModels, -2, Config.Battle.RoundDuration * 0.4) end)
+		moveGroup(foeModels, 2, Config.Battle.RoundDuration * 0.4)
+
+		clashBurst(ARENA, round.Crit and UITheme.Color.Bolts or UITheme.Color.Accent)
+		cameraShake(round.Crit and 2.6 or 1.6)
+		Sound.play("Clash", round.Crit and 0.9 or 0.6)
+
+		local mineStam = (youTeam == 1) and round.StaminaA or round.StaminaB
+		local foeStam = (youTeam == 1) and round.StaminaB or round.StaminaA
+		setBar(fillMine, sumList(mineStam) / mineMax)
+		setBar(fillFoe, sumList(foeStam) / foeMax)
+
+		task.spawn(function() moveGroup(mineModels, -8, Config.Battle.RoundDuration * 0.4) end)
+		moveGroup(foeModels, 8, Config.Battle.RoundDuration * 0.4)
+		task.wait(Config.Battle.RoundDuration * 0.2)
+	end
+
+	-- Decide visual outcome.
+	local mineWon = (payload.Winner == youTeam)
+	roundLabel.Text = ""
+	local loserModels = mineWon and foeModels or mineModels
+	for _, m in loserModels do
+		spinner.setSpeed(m, 6)
+		spinner.setLean(m, 18)
+		task.spawn(function()
+			moveTo(m, m:GetPivot().Position - Vector3.new(0, 4, 0), 1.2)
+		end)
+	end
+
+	Sound.stopLoop("Spin")
+	if spectator then
+		local winName = (payload.Winner == 1) and payload.SideA.Name or payload.SideB.Name
+		local banner = UITheme.frame({ Size = UDim2.new(0, 460, 0, 110), Position = UDim2.new(0.5, -230, 0.5, -180), BackgroundColor3 = UITheme.Color.Panel }, gui)
+		UITheme.corner(16, banner)
+		UITheme.stroke(UITheme.Color.Accent, 3, banner)
+		UITheme.label({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0, 0, 0, 18), Text = "👁️ ESPECTANDO", TextColor3 = UITheme.Color.Accent, TextSize = 26 }, banner)
+		UITheme.label({ Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 60), Text = ("Ganador: %s 🏆"):format(winName), TextSize = 20, TextColor3 = UITheme.Color.Good }, banner)
+		task.delay(3.2, function() banner:Destroy() end)
+	else
+		Sound.play(mineWon and "Victory" or "Defeat", 0.8)
+		resultBanner(gui, mineWon, rewards)
+	end
+	task.wait(2.6)
+
+	-- Cleanup.
+	spinner.stop()
+	for _, m in mineModels do
+		m:Destroy()
+	end
+	for _, m in foeModels do
+		m:Destroy()
+	end
+	overlay:Destroy()
+	camera.CameraType = prevType
+	MusicController.setBattle(false)
+	playing = false
+end
+
 return BattleView

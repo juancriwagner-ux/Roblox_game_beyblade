@@ -90,6 +90,14 @@ onInvoke("StartBattle", function(player, bladeId, rarity)
 	return BattleService.start(player)
 end)
 
+onInvoke("StartTeamBattle", function(player)
+	return BattleService.startTeam(player)
+end)
+
+onInvoke("SpectateBattle", function(player)
+	return BattleService.spectate(player)
+end)
+
 onInvoke("BuySkin", function(player, skinId)
 	if typeof(skinId) ~= "string" then
 		return { ok = false }

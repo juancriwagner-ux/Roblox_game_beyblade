@@ -233,4 +233,154 @@ function BattleResolver.resolve(a: Loadout, b: Loadout, seed: number): Result
 	}
 end
 
+-- ===== Team (2v2) battles =============================================
+-- Each team is a list of loadouts. Per round, every living blade strikes a
+-- random living foe; team scores are summed and the losing team's living blades
+-- share the stamina loss. Per-blade stamina is reported as a list so the client
+-- can drain each blade's bar. Deterministic from the seed, like the 1v1 path.
+
+local function livingMembers(team: { Fighter }): { Fighter }
+	local alive = {}
+	for _, f in team do
+		if f.stamina > 0 then
+			table.insert(alive, f)
+		end
+	end
+	return alive
+end
+
+function BattleResolver.estimateTeams(teamA: { Loadout }, teamB: { Loadout }): number
+	local pa, pb = 0, 0
+	for _, l in teamA do
+		pa += BeybladeData.power(l.BladeId, l.Rarity)
+	end
+	for _, l in teamB do
+		pb += BeybladeData.power(l.BladeId, l.Rarity)
+	end
+	local diff = (pa - pb) / 200
+	return math.clamp(1 / (1 + math.exp(-diff)), 0.05, 0.95)
+end
+
+function BattleResolver.resolveTeams(teamA: { Loadout }, teamB: { Loadout }, seed: number): any
+	local rng = Random.new(seed)
+	local fa: { Fighter } = {}
+	local fb: { Fighter } = {}
+	for _, l in teamA do
+		table.insert(fa, buildFighter(l))
+	end
+	for _, l in teamB do
+		table.insert(fb, buildFighter(l))
+	end
+
+	local rounds = {}
+	local wonA, wonB = 0, 0
+
+	for i = 1, Config.Battle.Rounds do
+		local scoreA, scoreB = 0, 0
+		local critAny, dodgeAny = false, false
+
+		for _, self in fa do
+			if self.stamina > 0 then
+				local foes = livingMembers(fb)
+				if #foes > 0 then
+					local s, c, d = strikeScore(self, foes[rng:NextInteger(1, #foes)], i, rng)
+					scoreA += s
+					critAny = critAny or c
+					dodgeAny = dodgeAny or d
+				end
+			end
+		end
+		for _, self in fb do
+			if self.stamina > 0 then
+				local foes = livingMembers(fa)
+				if #foes > 0 then
+					local s, c, d = strikeScore(self, foes[rng:NextInteger(1, #foes)], i, rng)
+					scoreB += s
+					critAny = critAny or c
+					dodgeAny = dodgeAny or d
+				end
+			end
+		end
+
+		local winner = 0
+		if math.abs(scoreA - scoreB) < 1e-3 then
+			winner = 0
+		elseif scoreA > scoreB then
+			winner = 1
+		else
+			winner = 2
+		end
+
+		local gap = math.abs(scoreA - scoreB)
+		if winner == 1 then
+			wonA += 1
+			local living = livingMembers(fb)
+			for _, f in living do
+				spendStamina(f, (18 + gap * 0.2) / math.max(1, #living) + 6)
+			end
+		elseif winner == 2 then
+			wonB += 1
+			local living = livingMembers(fa)
+			for _, f in living do
+				spendStamina(f, (18 + gap * 0.2) / math.max(1, #living) + 6)
+			end
+		end
+
+		local staminaA, staminaB = {}, {}
+		for _, f in fa do
+			table.insert(staminaA, math.floor(f.stamina))
+		end
+		for _, f in fb do
+			table.insert(staminaB, math.floor(f.stamina))
+		end
+		table.insert(rounds, {
+			Index = i,
+			ScoreA = math.floor(scoreA),
+			ScoreB = math.floor(scoreB),
+			Winner = winner,
+			StaminaA = staminaA,
+			StaminaB = staminaB,
+			Crit = critAny,
+			Dodge = dodgeAny,
+		})
+
+		if #livingMembers(fa) == 0 or #livingMembers(fb) == 0 then
+			break
+		end
+	end
+
+	local aliveA = #livingMembers(fa)
+	local aliveB = #livingMembers(fb)
+	local sumA, sumB = 0, 0
+	for _, f in fa do
+		sumA += f.stamina
+	end
+	for _, f in fb do
+		sumB += f.stamina
+	end
+
+	local winner: number
+	if aliveA == 0 and aliveB > 0 then
+		winner = 2
+	elseif aliveB == 0 and aliveA > 0 then
+		winner = 1
+	elseif wonA ~= wonB then
+		winner = (wonA > wonB) and 1 or 2
+	elseif math.abs(sumA - sumB) > 1 then
+		winner = (sumA > sumB) and 1 or 2
+	else
+		winner = 1
+	end
+
+	return {
+		Seed = seed,
+		Winner = winner,
+		Rounds = rounds,
+		A = teamA,
+		B = teamB,
+		WinChanceA = BattleResolver.estimateTeams(teamA, teamB),
+	}
+end
+
 return BattleResolver
+
