@@ -22,6 +22,7 @@ local QuestService = require(script.QuestService)
 local CodesService = require(script.CodesService)
 local LeaderboardService = require(script.LeaderboardService)
 local GachaService = require(script.GachaService)
+local SeasonService = require(script.SeasonService)
 local Hub = require(script.Hub)
 
 -- ===== Boot =====
@@ -145,6 +146,17 @@ onInvoke("OpenCrate", function(player, crateId)
 	return GachaService.open(player, crateId)
 end)
 
+onInvoke("ClaimSeasonReward", function(player, tier, track)
+	if typeof(tier) ~= "number" or (track ~= "free" and track ~= "premium") then
+		return { ok = false }
+	end
+	return SeasonService.claim(player, tier, track)
+end)
+
+onInvoke("BuyPremiumPass", function(player)
+	return SeasonService.buyPremium(player)
+end)
+
 onInvoke("CompleteTutorial", function(player)
 	local p = DataService.get(player)
 	if not p then
@@ -184,6 +196,7 @@ local function onPlayerAdded(player: Player)
 	ProgressService.setupLeaderstats(player)
 	BeybladeService.grantStarters(player)
 	QuestService.ensureDaily(player)
+	SeasonService.ensure(player)
 	DataService.push(player)
 	LeaderboardService.update(player)
 	-- Welcome message.

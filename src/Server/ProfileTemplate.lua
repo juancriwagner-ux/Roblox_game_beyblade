@@ -38,6 +38,15 @@ local function template()
 		Settings = { Music = true, Sfx = true },
 		-- First-time user experience flag.
 		TutorialDone = false,
+		-- Battle Pass / season state.
+		Season = {
+			Id = 0,
+			XP = 0,
+			Tier = 0,
+			Premium = false,
+			ClaimedFree = {} :: { [string]: boolean }, -- tier (as string) -> true
+			ClaimedPremium = {} :: { [string]: boolean },
+		},
 		FirstJoinUnix = 0,
 		LastSeenUnix = 0,
 	}

@@ -25,6 +25,8 @@ Net.Definitions = {
 	SaveSettings = "Function", -- (settings) -> ok
 	OpenCrate = "Function", -- (crateId) -> { ok, bladeId?, rarity?, reason? }
 	CompleteTutorial = "Function", -- () -> { ok, reward? }
+	ClaimSeasonReward = "Function", -- (tier, track) -> { ok, reward? }
+	BuyPremiumPass = "Function", -- () -> { ok, reason? }
 
 	-- Server -> Client (Events)
 	ProfileUpdated = "Event", -- (profile)

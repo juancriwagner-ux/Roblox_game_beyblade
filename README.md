@@ -53,6 +53,10 @@ subir assets), así que el juego es jugable en cuanto lo sincronizas a Studio.
 - **Tutorial (FTUE)**: secuencia guiada de bienvenida en la primera partida con
   regalo de onboarding; se marca en el perfil para no repetirse.
 - **UI responsive**: escalado global automático para móvil/tablet/PC.
+- **Pase de Temporada (Battle Pass)**: 30 niveles con track gratis y premium,
+  recompensas deterministas (incl. skins/blade de hito), pase premium comprable
+  con Núcleos, XP alimentada por todo el juego y **rotación mensual automática**
+  (cada mes natural es una temporada nueva con reset).
 
 ---
 

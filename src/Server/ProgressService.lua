@@ -7,6 +7,7 @@ local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Net)
 local BeybladeData = require(Shared.BeybladeData)
 local DataService = require(script.Parent.DataService)
+local SeasonService = require(script.Parent.SeasonService)
 
 local ProgressService = {}
 
@@ -35,6 +36,8 @@ function ProgressService.addXP(player: Player, amount: number)
 		notify(player, ("⭐ ¡Subiste a nivel %d!"):format(newLevel), "success")
 	end
 	DataService.push(player)
+	-- Every XP gain also feeds the Battle Pass.
+	SeasonService.addXP(player, amount)
 end
 
 -- Create the leaderstats folder shown in Roblox's player list.

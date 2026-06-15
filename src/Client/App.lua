@@ -16,6 +16,7 @@ local CategoryData = require(Shared.CategoryData)
 local SkinData = require(Shared.SkinData)
 local RankData = require(Shared.RankData)
 local CrateData = require(Shared.CrateData)
+local SeasonData = require(Shared.SeasonData)
 
 local Assets = require(Shared.Assets)
 
@@ -407,6 +408,110 @@ local function buildGacha(scroll: ScrollingFrame)
 	end
 end
 
+-- ===== Battle Pass / Season ===========================================
+local function rewardText(r: any): string
+	local parts = {}
+	if r.Bolts then table.insert(parts, ("⚙ %d"):format(r.Bolts)) end
+	if r.Cores then table.insert(parts, ("◆ %d"):format(r.Cores)) end
+	if r.Skin then table.insert(parts, ("🎨 %s"):format(SkinData.get(r.Skin) and SkinData.get(r.Skin).Name or r.Skin)) end
+	if r.Blade then table.insert(parts, ("🌀 %s"):format(BeybladeData.get(r.Blade.Id) and BeybladeData.get(r.Blade.Id).Name or r.Blade.Id)) end
+	return table.concat(parts, "  ")
+end
+
+local function claimChip(parent: Instance, x: number, w: number, label: string, color: Color3, enabled: boolean, onClick: (() -> ())?)
+	local b = UITheme.button({ Size = UDim2.new(0, w, 0, 28), Position = UDim2.new(0, x, 1, -34), Text = label, TextSize = 13, BackgroundColor3 = color, TextColor3 = enabled and UITheme.Color.BG or UITheme.Color.SubText }, parent)
+	UITheme.corner(7, b)
+	b.AutoButtonColor = enabled
+	if enabled and onClick then
+		b.MouseButton1Click:Connect(onClick)
+	end
+	return b
+end
+
+local function buildSeason(scroll: ScrollingFrame)
+	for _, c in scroll:GetChildren() do
+		c:Destroy()
+	end
+	local profile = ClientState.get()
+	if not profile then
+		return
+	end
+	local s = profile.Season
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 8)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = scroll
+
+	-- Header card: season name, tier, XP bar, premium status.
+	local head = UITheme.frame({ Size = UDim2.new(1, -6, 0, 92), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = 0 }, scroll)
+	UITheme.corner(14, head)
+	UITheme.stroke(s.Premium and UITheme.Color.Bolts or UITheme.Color.Accent, 2.5, head)
+	UITheme.label({ Size = UDim2.new(1, -200, 0, 26), Position = UDim2.new(0, 14, 0, 10), Text = SeasonData.name(s.Id ~= 0 and s.Id or SeasonData.currentId()), TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left }, head)
+	UITheme.label({ Size = UDim2.new(1, -200, 0, 20), Position = UDim2.new(0, 14, 0, 38), Text = ("Nivel %d / %d   %s"):format(s.Tier, SeasonData.MaxTier, s.Premium and "🌟 Premium" or "Gratis"), TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, head)
+	-- XP progress within the current tier.
+	local intoTier = s.XP % SeasonData.XpPerTier
+	local track = UITheme.frame({ Size = UDim2.new(1, -28, 0, 12), Position = UDim2.new(0, 14, 0, 66), BackgroundColor3 = UITheme.Color.BG }, head)
+	UITheme.corner(6, track)
+	local fill = UITheme.frame({ Size = UDim2.new(s.Tier >= SeasonData.MaxTier and 1 or (intoTier / SeasonData.XpPerTier), 0, 1, 0), BackgroundColor3 = UITheme.Color.Accent }, track)
+	UITheme.corner(6, fill)
+	if not s.Premium then
+		local buy = UITheme.button({ Size = UDim2.new(0, 170, 0, 40), Position = UDim2.new(1, -184, 0, 10), Text = ("🌟 Pase Premium\n◆ %d"):format(SeasonData.PremiumPriceCores), TextSize = 14, BackgroundColor3 = UITheme.Color.Bolts, TextColor3 = UITheme.Color.BG }, head)
+		UITheme.corner(10, buy)
+		buy.MouseButton1Click:Connect(function()
+			(Net.get("BuyPremiumPass") :: RemoteFunction):InvokeServer()
+		end)
+	end
+
+	-- Column headers.
+	local hdr = UITheme.frame({ Size = UDim2.new(1, -6, 0, 22), BackgroundTransparency = 1, LayoutOrder = 1 }, scroll)
+	UITheme.label({ Size = UDim2.new(0, 50, 1, 0), Position = UDim2.new(0, 6, 0, 0), Text = "Nivel", TextColor3 = UITheme.Color.SubText, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left }, hdr)
+	UITheme.label({ Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.new(0, 64, 0, 0), Text = "Gratis", TextColor3 = UITheme.Color.SubText, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left }, hdr)
+	UITheme.label({ Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.new(0.55, 0, 0, 0), Text = "🌟 Premium", TextColor3 = UITheme.Color.Bolts, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left }, hdr)
+
+	for tier = 1, SeasonData.MaxTier do
+		local rewards = SeasonData.rewardFor(tier)
+		local unlocked = tier <= s.Tier
+		local row = UITheme.frame({ Size = UDim2.new(1, -6, 0, 66), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = tier + 1 }, scroll)
+		UITheme.corner(10, row)
+		UITheme.stroke(unlocked and UITheme.Color.Accent or UITheme.Color.Stroke, unlocked and 2 or 1, row)
+		-- Tier badge.
+		UITheme.label({ Size = UDim2.new(0, 50, 1, 0), Position = UDim2.new(0, 6, 0, 0), Text = tostring(tier), TextSize = 22, TextColor3 = unlocked and UITheme.Color.Accent or UITheme.Color.SubText }, row)
+
+		-- Free reward + chip.
+		UITheme.label({ Size = UDim2.new(0.4, 0, 0, 22), Position = UDim2.new(0, 64, 0, 8), Text = rewardText(rewards.Free), TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, row)
+		do
+			local key = tostring(tier)
+			if s.ClaimedFree[key] then
+				claimChip(row, 64, 100, "✓ Reclamado", UITheme.Color.Good, false)
+			elseif unlocked then
+				claimChip(row, 64, 100, "Reclamar", UITheme.Color.Accent, true, function()
+					(Net.get("ClaimSeasonReward") :: RemoteFunction):InvokeServer(tier, "free")
+				end)
+			else
+				claimChip(row, 64, 100, "🔒 Bloqueado", UITheme.Color.PanelLight, false)
+			end
+		end
+
+		-- Premium reward + chip.
+		UITheme.label({ Size = UDim2.new(0.4, 0, 0, 22), Position = UDim2.new(0.55, 0, 0, 8), Text = rewardText(rewards.Premium), TextColor3 = UITheme.Color.Bolts, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, row)
+		do
+			local key = tostring(tier)
+			local px = 372
+			if not s.Premium then
+				claimChip(row, px, 120, "🌟 Premium", UITheme.Color.PanelLight, false)
+			elseif s.ClaimedPremium[key] then
+				claimChip(row, px, 120, "✓ Reclamado", UITheme.Color.Good, false)
+			elseif unlocked then
+				claimChip(row, px, 120, "Reclamar", UITheme.Color.Bolts, true, function()
+					(Net.get("ClaimSeasonReward") :: RemoteFunction):InvokeServer(tier, "premium")
+				end)
+			else
+				claimChip(row, px, 120, "🔒 Bloqueado", UITheme.Color.PanelLight, false)
+			end
+		end
+	end
+end
+
 -- ===== Quests =========================================================
 local function buildQuests(scroll: ScrollingFrame)
 	for _, c in scroll:GetChildren() do
@@ -608,9 +713,9 @@ function App.start(screenGui: ScreenGui)
 	buildHud()
 
 	-- Navigation dock (left side, below the HUD, grows downward).
-	local dock = UITheme.frame({ Name = "Dock", BackgroundTransparency = 1, Size = UDim2.new(0, 160, 0, 460), Position = UDim2.new(0, 16, 0, 104) }, gui)
+	local dock = UITheme.frame({ Name = "Dock", BackgroundTransparency = 1, Size = UDim2.new(0, 160, 0, 540), Position = UDim2.new(0, 16, 0, 104) }, gui)
 	local dl = Instance.new("UIListLayout")
-	dl.Padding = UDim.new(0, 10)
+	dl.Padding = UDim.new(0, 9)
 	dl.Parent = dock
 
 	-- Panels.
@@ -620,33 +725,38 @@ function App.start(screenGui: ScreenGui)
 	local _, dailyScroll = makePanel("Daily", "🎁  Recompensa Diaria")
 	local _, questScroll = makePanel("Quests", "🎯  Misiones Diarias")
 	local _, rankScroll = makePanel("Ranking", "🏆  Ranking")
+	local _, seasonScroll = makePanel("Season", "🏅  Pase de Temporada")
 	local _, extrasScroll = makePanel("Extras", "🎟️  Códigos y Ajustes")
 
 	dockButton("🎒  Colección", 2, dock, function()
 		buildCollection(colScroll)
 		openPanel("Collection")
 	end)
-	dockButton("📦  Cofres", 3, dock, function()
+	dockButton("🏅  Pase", 3, dock, function()
+		buildSeason(seasonScroll)
+		openPanel("Season")
+	end)
+	dockButton("📦  Cofres", 4, dock, function()
 		buildGacha(crateScroll)
 		openPanel("Crates")
 	end)
-	dockButton("🎯  Misiones", 4, dock, function()
+	dockButton("🎯  Misiones", 5, dock, function()
 		buildQuests(questScroll)
 		openPanel("Quests")
 	end)
-	dockButton("🏆  Ranking", 5, dock, function()
+	dockButton("🏆  Ranking", 6, dock, function()
 		buildRanking(rankScroll)
 		openPanel("Ranking")
 	end)
-	dockButton("🛒  Tienda", 6, dock, function()
+	dockButton("🛒  Tienda", 7, dock, function()
 		buildShop(shopScroll)
 		openPanel("Shop")
 	end)
-	dockButton("🎁  Diario", 7, dock, function()
+	dockButton("🎁  Diario", 8, dock, function()
 		buildDaily(dailyScroll)
 		openPanel("Daily")
 	end)
-	dockButton("🎟️  Extras", 8, dock, function()
+	dockButton("🎟️  Extras", 9, dock, function()
 		buildExtras(extrasScroll)
 		openPanel("Extras")
 	end)
@@ -690,6 +800,9 @@ function App.start(screenGui: ScreenGui)
 		end
 		if panels.Crates.Visible then
 			buildGacha(crateScroll)
+		end
+		if panels.Season.Visible then
+			buildSeason(seasonScroll)
 		end
 	end)
 end
