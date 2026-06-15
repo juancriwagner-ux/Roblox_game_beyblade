@@ -14,6 +14,7 @@ local BeybladeData = require(Shared.BeybladeData)
 local RarityData = require(Shared.RarityData)
 local CategoryData = require(Shared.CategoryData)
 local SkinData = require(Shared.SkinData)
+local RankData = require(Shared.RankData)
 
 local Assets = require(Shared.Assets)
 
@@ -347,6 +348,177 @@ local function buildDaily(scroll: ScrollingFrame)
 	end)
 end
 
+-- ===== Quests =========================================================
+local function buildQuests(scroll: ScrollingFrame)
+	for _, c in scroll:GetChildren() do
+		c:Destroy()
+	end
+	local profile = ClientState.get()
+	if not profile then
+		return
+	end
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 10)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = scroll
+
+	for i, q in profile.Quests.List do
+		local done = q.Progress >= q.Target
+		local row = UITheme.frame({ Size = UDim2.new(1, -6, 0, 84), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = i }, scroll)
+		UITheme.corner(12, row)
+		UITheme.stroke(q.Claimed and UITheme.Color.Good or (done and UITheme.Color.Accent or UITheme.Color.Stroke), done and 2.5 or 1.5, row)
+		UITheme.label({ Size = UDim2.new(1, -180, 0, 24), Position = UDim2.new(0, 14, 0, 10), Text = q.Desc, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left }, row)
+		UITheme.label({
+			Size = UDim2.new(1, -180, 0, 18), Position = UDim2.new(0, 14, 0, 56),
+			Text = ("Recompensa: %d Tuercas%s"):format(q.Bolts, q.Cores > 0 and (" · " .. q.Cores .. " Núcleos") or ""),
+			TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
+		}, row)
+		-- Progress bar.
+		local track = UITheme.frame({ Size = UDim2.new(1, -190, 0, 12), Position = UDim2.new(0, 14, 0, 36), BackgroundColor3 = UITheme.Color.BG }, row)
+		UITheme.corner(6, track)
+		local fill = UITheme.frame({ Size = UDim2.new(math.clamp(q.Progress / q.Target, 0, 1), 0, 1, 0), BackgroundColor3 = UITheme.Color.Accent }, track)
+		UITheme.corner(6, fill)
+		UITheme.label({ Size = UDim2.new(0, 60, 0, 12), Position = UDim2.new(1, -176, 0, 36), Text = ("%d/%d"):format(q.Progress, q.Target), TextSize = 12, TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular }, row)
+
+		local btn = UITheme.button({ Size = UDim2.new(0, 130, 0, 40), Position = UDim2.new(1, -144, 0.5, -20), TextSize = 15 }, row)
+		UITheme.corner(10, btn)
+		if q.Claimed then
+			btn.Text = "RECLAMADO"
+			btn.BackgroundColor3 = UITheme.Color.Good
+			btn.AutoButtonColor = false
+		elseif done then
+			btn.Text = "Reclamar"
+			btn.BackgroundColor3 = UITheme.Color.Accent
+			btn.MouseButton1Click:Connect(function()
+				(Net.get("ClaimQuest") :: RemoteFunction):InvokeServer(q.Id)
+			end)
+		else
+			btn.Text = "En progreso"
+			btn.BackgroundColor3 = UITheme.Color.PanelLight
+			btn.TextColor3 = UITheme.Color.SubText
+			btn.AutoButtonColor = false
+		end
+	end
+end
+
+-- ===== Ranking ========================================================
+local function buildRanking(scroll: ScrollingFrame)
+	for _, c in scroll:GetChildren() do
+		c:Destroy()
+	end
+	local profile = ClientState.get()
+	if not profile then
+		return
+	end
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 8)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = scroll
+
+	-- Your league card.
+	local rank = RankData.forTrophies(profile.Trophies)
+	local toNext, nextRank = RankData.toNext(profile.Trophies)
+	local card = UITheme.frame({ Size = UDim2.new(1, -6, 0, 74), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = 0 }, scroll)
+	UITheme.corner(12, card)
+	UITheme.stroke(rank.Color, 2.5, card)
+	UITheme.label({ Size = UDim2.new(1, -20, 0, 28), Position = UDim2.new(0, 14, 0, 10), Text = ("%s Liga %s"):format(rank.Icon, rank.Name), TextColor3 = rank.Color, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left }, card)
+	local sub = toNext and ("🏆 %d  ·  faltan %d para %s"):format(profile.Trophies, toNext, nextRank.Name) or ("🏆 %d  ·  ¡liga máxima!"):format(profile.Trophies)
+	UITheme.label({ Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 14, 0, 42), Text = sub, TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left }, card)
+
+	local header = UITheme.label({ Size = UDim2.new(1, -6, 0, 24), Text = "🌍 Top mundial — Trofeos", TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = 1 }, scroll)
+
+	-- Async fetch of the global board.
+	task.spawn(function()
+		local top = (Net.get("GetLeaderboard") :: RemoteFunction):InvokeServer("Trophies")
+		if typeof(top) ~= "table" then
+			return
+		end
+		if #top == 0 then
+			UITheme.label({ Size = UDim2.new(1, -6, 0, 30), Text = "Aún sin datos (se llena al jugar y publicar).", TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 13, LayoutOrder = 2 }, scroll)
+			return
+		end
+		for i, entry in top do
+			local medal = (i == 1 and "🥇") or (i == 2 and "🥈") or (i == 3 and "🥉") or ("#" .. i)
+			local row = UITheme.frame({ Size = UDim2.new(1, -6, 0, 38), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = i + 1 }, scroll)
+			UITheme.corner(8, row)
+			UITheme.label({ Size = UDim2.new(0, 44, 1, 0), Position = UDim2.new(0, 8, 0, 0), Text = medal, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left }, row)
+			UITheme.label({ Size = UDim2.new(1, -160, 1, 0), Position = UDim2.new(0, 56, 0, 0), Text = entry.Name, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left }, row)
+			UITheme.label({ Size = UDim2.new(0, 96, 1, 0), Position = UDim2.new(1, -104, 0, 0), Text = ("🏆 %s"):format(Util.abbreviate(entry.Value)), TextColor3 = UITheme.Color.Bolts, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Right }, row)
+		end
+	end)
+end
+
+-- ===== Extras: codes + settings =======================================
+local function buildExtras(scroll: ScrollingFrame)
+	for _, c in scroll:GetChildren() do
+		c:Destroy()
+	end
+	local profile = ClientState.get()
+	if not profile then
+		return
+	end
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 12)
+	layout.Parent = scroll
+
+	-- Codes.
+	local codeCard = UITheme.frame({ Size = UDim2.new(1, -6, 0, 110), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = 1 }, scroll)
+	UITheme.corner(12, codeCard)
+	UITheme.stroke(UITheme.Color.Accent, 1.5, codeCard)
+	UITheme.label({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.new(0, 14, 0, 10), Text = "🎟️ Canjear código", TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left }, codeCard)
+	local box = Instance.new("TextBox")
+	box.Size = UDim2.new(1, -160, 0, 40)
+	box.Position = UDim2.new(0, 14, 0, 50)
+	box.BackgroundColor3 = UITheme.Color.BG
+	box.BorderSizePixel = 0
+	box.Font = UITheme.Font
+	box.TextColor3 = UITheme.Color.Text
+	box.PlaceholderText = "Escribe un código..."
+	box.Text = ""
+	box.TextSize = 16
+	box.ClearTextOnFocus = false
+	box.Parent = codeCard
+	UITheme.corner(8, box)
+	local redeem = UITheme.button({ Size = UDim2.new(0, 130, 0, 40), Position = UDim2.new(1, -144, 0, 50), Text = "Canjear", TextSize = 16 }, codeCard)
+	UITheme.corner(8, redeem)
+	redeem.MouseButton1Click:Connect(function()
+		if box.Text == "" then
+			return
+		end
+		local res = (Net.get("RedeemCode") :: RemoteFunction):InvokeServer(box.Text)
+		box.Text = ""
+		if res and not res.ok then
+			redeem.Text = res.reason == "used" and "Ya usado" or "Inválido"
+			task.delay(1.8, function()
+				redeem.Text = "Canjear"
+			end)
+		end
+	end)
+	UITheme.label({ Size = UDim2.new(1, -20, 0, 16), Position = UDim2.new(0, 14, 0, 92), Text = "Prueba: LAUNCH · BEYBLADE · SPINSTORM", TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left }, codeCard)
+
+	-- Settings toggles.
+	local setCard = UITheme.frame({ Size = UDim2.new(1, -6, 0, 70), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = 2 }, scroll)
+	UITheme.corner(12, setCard)
+	UITheme.stroke(UITheme.Color.Stroke, 1.5, setCard)
+	UITheme.label({ Size = UDim2.new(1, -20, 0, 22), Position = UDim2.new(0, 14, 0, 8), Text = "⚙️ Ajustes", TextSize = 18, TextXAlignment = Enum.TextXAlignment.Left }, setCard)
+
+	local function toggle(label: string, key: string, x: number)
+		local on = profile.Settings[key] == true
+		local b = UITheme.button({ Size = UDim2.new(0, 150, 0, 30), Position = UDim2.new(0, x, 0, 34), Text = ("%s: %s"):format(label, on and "ON" or "OFF"), TextSize = 14, BackgroundColor3 = on and UITheme.Color.Good or UITheme.Color.PanelLight, TextColor3 = on and UITheme.Color.BG or UITheme.Color.SubText }, setCard)
+		UITheme.corner(8, b)
+		b.MouseButton1Click:Connect(function()
+			profile.Settings[key] = not profile.Settings[key]
+			(Net.get("SaveSettings") :: RemoteFunction):InvokeServer({ Music = profile.Settings.Music, Sfx = profile.Settings.Sfx })
+			local nowOn = profile.Settings[key]
+			b.Text = ("%s: %s"):format(label, nowOn and "ON" or "OFF")
+			b.BackgroundColor3 = nowOn and UITheme.Color.Good or UITheme.Color.PanelLight
+			b.TextColor3 = nowOn and UITheme.Color.BG or UITheme.Color.SubText
+		end)
+	end
+	toggle("Música", "Music", 14)
+	toggle("Sonido", "Sfx", 176)
+end
+
 -- ===== Refresh on profile change ======================================
 local function refreshHud(profile)
 	if not profile then
@@ -356,8 +528,11 @@ local function refreshHud(profile)
 	coresLabel.Text = Util.abbreviate(profile.Currencies.Cores)
 	local eq = profile.Equipped
 	local def = BeybladeData.get(eq.BladeId)
+	local rank = RankData.forTrophies(profile.Trophies or 0)
 	if def then
-		powerLabel.Text = ("Equipado: <b>%s</b> · %s · ⚡%d"):format(def.Name, RarityData.Tiers[eq.Rarity].Name, BeybladeData.power(eq.BladeId, eq.Rarity))
+		powerLabel.Text = ("%s <b>%s</b> · Nv.%d · Equipado: <b>%s</b> · ⚡%d"):format(
+			rank.Icon, rank.Name, profile.Level or 1, def.Name, BeybladeData.power(eq.BladeId, eq.Rarity)
+		)
 	end
 end
 
@@ -373,8 +548,8 @@ function App.start(screenGui: ScreenGui)
 	gui = screenGui
 	buildHud()
 
-	-- Navigation dock.
-	local dock = UITheme.frame({ Name = "Dock", BackgroundTransparency = 1, Size = UDim2.new(0, 150, 0, 220), Position = UDim2.new(0, 16, 1, -240) }, gui)
+	-- Navigation dock (left side, below the HUD, grows downward).
+	local dock = UITheme.frame({ Name = "Dock", BackgroundTransparency = 1, Size = UDim2.new(0, 160, 0, 400), Position = UDim2.new(0, 16, 0, 104) }, gui)
 	local dl = Instance.new("UIListLayout")
 	dl.Padding = UDim.new(0, 10)
 	dl.Parent = dock
@@ -383,18 +558,33 @@ function App.start(screenGui: ScreenGui)
 	local _, colScroll = makePanel("Collection", "🎒  Colección")
 	local _, shopScroll = makePanel("Shop", "🛒  Tienda de Skins")
 	local _, dailyScroll = makePanel("Daily", "🎁  Recompensa Diaria")
+	local _, questScroll = makePanel("Quests", "🎯  Misiones Diarias")
+	local _, rankScroll = makePanel("Ranking", "🏆  Ranking")
+	local _, extrasScroll = makePanel("Extras", "🎟️  Códigos y Ajustes")
 
 	dockButton("🎒  Colección", 2, dock, function()
 		buildCollection(colScroll)
 		openPanel("Collection")
 	end)
-	dockButton("🛒  Tienda", 3, dock, function()
+	dockButton("🎯  Misiones", 3, dock, function()
+		buildQuests(questScroll)
+		openPanel("Quests")
+	end)
+	dockButton("🏆  Ranking", 4, dock, function()
+		buildRanking(rankScroll)
+		openPanel("Ranking")
+	end)
+	dockButton("🛒  Tienda", 5, dock, function()
 		buildShop(shopScroll)
 		openPanel("Shop")
 	end)
-	dockButton("🎁  Diario", 4, dock, function()
+	dockButton("🎁  Diario", 6, dock, function()
 		buildDaily(dailyScroll)
 		openPanel("Daily")
+	end)
+	dockButton("🎟️  Extras", 7, dock, function()
+		buildExtras(extrasScroll)
+		openPanel("Extras")
 	end)
 
 	-- Big battle button (bottom centre).
@@ -427,6 +617,12 @@ function App.start(screenGui: ScreenGui)
 		end
 		if panels.Daily.Visible then
 			buildDaily(dailyScroll)
+		end
+		if panels.Quests.Visible then
+			buildQuests(questScroll)
+		end
+		if panels.Extras.Visible then
+			buildExtras(extrasScroll)
 		end
 	end)
 end

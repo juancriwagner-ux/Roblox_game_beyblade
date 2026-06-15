@@ -9,6 +9,7 @@ local BeybladeData = require(Shared.BeybladeData)
 local RarityData = require(Shared.RarityData)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local QuestService = require(script.Parent.QuestService)
 
 local BeybladeService = {}
 
@@ -114,6 +115,7 @@ function BeybladeService.prestige(player: Player, bladeId: string, rarity: strin
 		p.Inventory[invKey(bladeId, rarity)] = nil
 	end
 	BeybladeService.grant(player, bladeId, nextId)
+	QuestService.report(player, "prestige", 1)
 	notify(player, ("¡%s ascendió a %s!"):format(BeybladeData.get(bladeId).Name, RarityData.Tiers[nextId].Name), "success")
 	return true
 end

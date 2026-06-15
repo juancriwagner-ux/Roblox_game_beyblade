@@ -32,6 +32,19 @@ subir assets), así que el juego es jugable en cuanto lo sincronizas a Studio.
 - **Persistencia** con DataStore (autosave + guardado al salir y al cerrar).
 - **Monetización** lista vía Developer Products (solo faltan tus IDs).
 
+### 🏆 Sistemas competitivos y de retención
+- **Ligas y trofeos**: 7 ligas (Bronce → Leyenda). Ganar/perder ajusta trofeos
+  según la fuerza del rival; emparejamiento por trofeos.
+- **Leaderboard global** (OrderedDataStore) de Trofeos y Victorias, con caché y
+  refresco periódico, mostrado en la UI de Ranking.
+- **`leaderstats`** visibles en la lista de jugadores de Roblox (🏆 Trofeos,
+  Victorias, Nivel).
+- **Nivel y XP**: progresión por jugar (batallas, recolectar) con aviso de subida.
+- **Misiones diarias**: set rotativo con progreso por eventos y recompensas.
+- **Códigos canjeables** (server-side, anti-datamine) para lanzamiento/creadores.
+- **Ajustes** (música/sonido) persistidos por jugador.
+- **Anti-exploit**: rate-limiting por jugador y por remote en todos los handlers.
+
 ---
 
 ## 📂 Estructura del proyecto

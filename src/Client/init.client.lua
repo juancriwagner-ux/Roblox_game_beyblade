@@ -12,6 +12,7 @@ local ClientState = require(script.ClientState)
 local App = require(script.App)
 local Toasts = require(script.Toasts)
 local BattleView = require(script.BattleView)
+local Sound = require(script.Sound)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -27,6 +28,13 @@ gui.Parent = playerGui
 ClientState.start()
 Toasts.start(gui)
 App.start(gui)
+
+-- Honor the player's SFX setting.
+ClientState.onChanged(function(profile)
+	if profile and profile.Settings then
+		Sound.setEnabled(profile.Settings.Sfx ~= false)
+	end
+end)
 
 -- Authoritative battle result -> play the clash, then reset the battle button.
 ;(Net.get("BattleResult") :: RemoteEvent).OnClientEvent:Connect(function(result, youAre, opponentName, rewards)

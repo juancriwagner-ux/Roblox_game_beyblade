@@ -106,11 +106,21 @@ function DataService.snapshot(player: Player): any?
 	return Util.deepCopy(p)
 end
 
+-- Other services can react whenever a profile is pushed (e.g. to refresh
+-- leaderstats) without DataService depending on them.
+local pushListeners: { (Player) -> () } = {}
+function DataService.onPush(fn: (Player) -> ())
+	table.insert(pushListeners, fn)
+end
+
 -- Push the latest profile to the owning client.
 function DataService.push(player: Player)
 	local snap = DataService.snapshot(player)
 	if snap then
 		(Net.get("ProfileUpdated") :: RemoteEvent):FireClient(player, snap)
+	end
+	for _, fn in pushListeners do
+		task.spawn(fn, player)
 	end
 end
 

@@ -7,6 +7,7 @@ local Net = require(Shared.Net)
 local SkinData = require(Shared.SkinData)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local QuestService = require(script.Parent.QuestService)
 
 local ShopService = {}
 
@@ -29,6 +30,7 @@ function ShopService.buySkin(player: Player, skinId: string): any
 	end
 	p.Skins[skinId] = true
 	DataService.push(player)
+	QuestService.report(player, "spend_cores", skin.Price)
 	notify(player, ("¡Skin desbloqueada: %s!"):format(skin.Name), "success")
 	return { ok = true }
 end

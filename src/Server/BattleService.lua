@@ -20,10 +20,21 @@ local BattleResolver = require(Shared.BattleResolver)
 
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
+local ProgressService = require(script.Parent.ProgressService)
+local QuestService = require(script.Parent.QuestService)
 
 local BattleService = {}
 
-type Ticket = { player: Player, loadout: any, power: number, since: number }
+type Ticket = { player: Player, loadout: any, power: number, trophies: number, since: number }
+
+-- Trophies gained/lost; beating a stronger opponent is worth more.
+local function trophyDelta(my: number, opp: number, won: boolean): number
+	local diff = (opp - my) / 25
+	if won then
+		return math.clamp(math.floor(30 + diff), 12, 50)
+	end
+	return -math.clamp(math.floor(30 - diff), 8, 40)
+end
 
 local queue: { Ticket } = {}
 local inBattle: { [Player]: boolean } = {}
@@ -73,12 +84,17 @@ local function makeBot(targetPower: number): any
 	return best
 end
 
-local function grantRewards(player: Player, won: boolean)
+local function grantRewards(player: Player, won: boolean, oppTrophies: number)
 	local p = DataService.get(player)
 	if not p then
 		return
 	end
 	p.Stats.Battles += 1
+	-- Trophies (competitive ladder).
+	local delta = trophyDelta(p.Trophies, oppTrophies, won)
+	p.Trophies = math.max(0, p.Trophies + delta)
+	p.PeakTrophies = math.max(p.PeakTrophies, p.Trophies)
+
 	if won then
 		p.Stats.Wins += 1
 		p.Stats.Streak += 1
@@ -92,6 +108,13 @@ local function grantRewards(player: Player, won: boolean)
 		EconomyService.add(player, "Bolts", Config.Rewards.BattleLoseBolts, true)
 	end
 	DataService.push(player)
+
+	-- Progression + quests.
+	ProgressService.addXP(player, won and 60 or 25)
+	QuestService.report(player, "battle", 1)
+	if won then
+		QuestService.report(player, "win", 1)
+	end
 end
 
 local function sendResult(player: Player, result: any, youAre: number, opponentName: string, won: boolean)
@@ -111,13 +134,13 @@ local function runMatch(a: Ticket, b: Ticket)
 
 	if a.player then
 		inBattle[a.player] = false
-		grantRewards(a.player, aWon)
+		grantRewards(a.player, aWon, b.trophies)
 		local oppName = b.player and b.player.DisplayName or ("🤖 " .. BOT_NAMES[rng:NextInteger(1, #BOT_NAMES)])
 		sendResult(a.player, result, 1, oppName, aWon)
 	end
 	if b.player then
 		inBattle[b.player] = false
-		grantRewards(b.player, bWon)
+		grantRewards(b.player, bWon, a.trophies)
 		local oppName = a.player and a.player.DisplayName or ("🤖 " .. BOT_NAMES[rng:NextInteger(1, #BOT_NAMES)])
 		sendResult(b.player, result, 2, oppName, bWon)
 	end
@@ -135,7 +158,8 @@ function BattleService.start(player: Player): any
 
 	inBattle[player] = true
 	local power = BeybladeData.power(loadout.BladeId, loadout.Rarity)
-	local ticket: Ticket = { player = player, loadout = loadout, power = power, since = os.clock() }
+	local prof = DataService.get(player)
+	local ticket: Ticket = { player = player, loadout = loadout, power = power, trophies = prof and prof.Trophies or 0, since = os.clock() }
 
 	-- Try to pair with a waiting human.
 	for i, other in queue do
@@ -154,7 +178,7 @@ function BattleService.start(player: Player): any
 		if idx then
 			table.remove(queue, idx)
 			if player.Parent and inBattle[player] then
-				local bot: Ticket = { player = nil :: any, loadout = makeBot(power), power = power, since = os.clock() }
+				local bot: Ticket = { player = nil :: any, loadout = makeBot(power), power = power, trophies = ticket.trophies, since = os.clock() }
 				runMatch(ticket, bot)
 			end
 		end

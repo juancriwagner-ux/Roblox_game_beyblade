@@ -19,6 +19,8 @@ local ModelBuilder = require(Shared.ModelBuilder)
 local DataService = require(script.Parent.DataService)
 local BeybladeService = require(script.Parent.BeybladeService)
 local EconomyService = require(script.Parent.EconomyService)
+local ProgressService = require(script.Parent.ProgressService)
+local QuestService = require(script.Parent.QuestService)
 
 local SpawnService = {}
 
@@ -55,6 +57,10 @@ local function collect(model: Model, player: Player)
 	end
 
 	(Net.get("SpawnCollected") :: RemoteEvent):FireClient(player, bladeId, rarity)
+
+	-- Progression + quests.
+	ProgressService.addXP(player, 15)
+	QuestService.report(player, "collect", 1)
 
 	-- Quick collect burst, then remove.
 	model:Destroy()

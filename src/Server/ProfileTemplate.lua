@@ -24,6 +24,18 @@ local function template()
 		Stats = { Wins = 0, Losses = 0, Streak = 0, BestStreak = 0, Collected = 0, Battles = 0 },
 		-- Daily login reward tracking.
 		Daily = { LastClaimUnix = 0, Day = 0 },
+		-- Competitive ladder.
+		Trophies = 0,
+		PeakTrophies = 0,
+		-- Progression.
+		XP = 0,
+		Level = 1,
+		-- Daily quests: { Day = <unix day>, List = { {Id, Type, Target, Progress, Bolts, Cores, Claimed} } }
+		Quests = { Day = 0, List = {} },
+		-- Redeemed promo codes (codeId -> true).
+		Codes = {} :: { [string]: boolean },
+		-- Client settings.
+		Settings = { Music = true, Sfx = true },
 		FirstJoinUnix = 0,
 		LastSeenUnix = 0,
 	}

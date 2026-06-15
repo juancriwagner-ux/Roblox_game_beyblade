@@ -17,6 +17,10 @@ local BattleService = require(script.BattleService)
 local ShopService = require(script.ShopService)
 local RewardService = require(script.RewardService)
 local MonetizationService = require(script.MonetizationService)
+local ProgressService = require(script.ProgressService)
+local QuestService = require(script.QuestService)
+local CodesService = require(script.CodesService)
+local LeaderboardService = require(script.LeaderboardService)
 local Hub = require(script.Hub)
 
 -- ===== Boot =====
@@ -25,14 +29,46 @@ local gardenCenter = Hub.build()
 SpawnService.setCenter(gardenCenter)
 
 DataService.init()
+ProgressService.init()
 SpawnService.init()
 MonetizationService.init()
+LeaderboardService.init()
 
 -- ===== Remote handlers =====
+-- Per-player, per-remote rate limiting (basic anti-exploit / spam guard).
+local lastCall: { [Player]: { [string]: number } } = {}
+local MIN_INTERVAL: { [string]: number } = {
+	StartBattle = 0.5,
+	BuySkin = 0.4,
+	RedeemCode = 1.0,
+	ClaimQuest = 0.3,
+	PrestigeBlade = 0.3,
+	ClaimDaily = 0.5,
+	default = 0.15,
+}
+
+local function rateLimited(player: Player, name: string): boolean
+	local now = os.clock()
+	local bucket = lastCall[player]
+	if not bucket then
+		bucket = {}
+		lastCall[player] = bucket
+	end
+	local minGap = MIN_INTERVAL[name] or MIN_INTERVAL.default
+	if bucket[name] and now - bucket[name] < minGap then
+		return true
+	end
+	bucket[name] = now
+	return false
+end
+
 local function onInvoke(name: string, handler: (Player, ...any) -> any)
 	(Net.get(name) :: RemoteFunction).OnServerInvoke = function(player, ...)
 		if not DataService.isLoaded(player) then
 			return { ok = false, reason = "loading" }
+		end
+		if rateLimited(player, name) then
+			return { ok = false, reason = "rate_limited" }
 		end
 		return handler(player, ...)
 	end
@@ -83,18 +119,52 @@ onInvoke("PrestigeBlade", function(player, bladeId, rarity)
 	return { ok = ok, reason = reason }
 end)
 
+onInvoke("GetLeaderboard", function(_player, board)
+	if board ~= "Trophies" and board ~= "Wins" then
+		board = "Trophies"
+	end
+	return LeaderboardService.getTop(board)
+end)
+
+onInvoke("RedeemCode", function(player, code)
+	return CodesService.redeem(player, code)
+end)
+
+onInvoke("ClaimQuest", function(player, questId)
+	if typeof(questId) ~= "string" then
+		return { ok = false }
+	end
+	return QuestService.claim(player, questId)
+end)
+
+onInvoke("SaveSettings", function(player, settings)
+	local p = DataService.get(player)
+	if not p or typeof(settings) ~= "table" then
+		return { ok = false }
+	end
+	p.Settings.Music = settings.Music == true
+	p.Settings.Sfx = settings.Sfx == true
+	DataService.push(player)
+	return { ok = true }
+end)
+
 -- ===== Player lifecycle =====
 local function onPlayerAdded(player: Player)
 	DataService.load(player)
+	ProgressService.setupLeaderstats(player)
 	BeybladeService.grantStarters(player)
+	QuestService.ensureDaily(player)
 	DataService.push(player)
+	LeaderboardService.update(player)
 	-- Welcome message.
 	;(Net.get("Notify") :: RemoteEvent):FireClient(player, "¡Bienvenido a Beyblade Arena!", "success")
 end
 
 local function onPlayerRemoving(player: Player)
 	BattleService.cleanup(player)
+	LeaderboardService.update(player)
 	DataService.release(player)
+	lastCall[player] = nil
 end
 
 for _, player in Players:GetPlayers() do

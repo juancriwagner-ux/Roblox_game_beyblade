@@ -19,6 +19,10 @@ Net.Definitions = {
 	EquipSkin = "Function", -- (bladeId, skinId) -> ok
 	ClaimDaily = "Function", -- () -> { ok, reward? }
 	PrestigeBlade = "Function", -- (bladeId) -> ok  (fuse duplicates to upgrade rarity)
+	GetLeaderboard = "Function", -- (board) -> sorted top list
+	RedeemCode = "Function", -- (code) -> { ok, reason?, reward? }
+	ClaimQuest = "Function", -- (questId) -> { ok, reward? }
+	SaveSettings = "Function", -- (settings) -> ok
 
 	-- Server -> Client (Events)
 	ProfileUpdated = "Event", -- (profile)
