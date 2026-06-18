@@ -11,6 +11,15 @@ guion de voz en off del trailer (listo para `inworld_text_to_speech`).
 > con entusiasmo creciente. (En `inworld_text_to_speech`, probar una voz
 > dinámica; ajustar ritmo rápido.)
 
+> ✅ **Locución ya generada** con `inworld_text_to_speech`, voz `Diego (es)`.
+> En tu cuenta de Higgsfield (audio `.wav`):
+> - **Trailer completo (~15s):** job `20868fd5-6d1e-4384-adbe-b4a36ac95fa8`
+> - **Versión corta Short (~6s):** job `c123cbad-71e1-48c4-854f-bf3ca9785f19`
+>
+> Descárgalas, móntalas sobre el trailer y la música de fondo, y sube la mezcla
+> final. Si quieres otra voz, regenera con `Miguel (es)`, `Rafael (es)` o
+> `Diego (es)` ajustando el texto.
+
 **Texto para locutar (timing aproximado):**
 
 ```

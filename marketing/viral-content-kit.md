@@ -192,3 +192,31 @@ tu editor (CapCut/Premiere) y publica según el calendario.
 ## 🔎 Validar antes de publicar
 Con `virality_predictor` (Higgsfield) se puede analizar cada video generado y
 quedarte con el de mayor hook/retención antes de subirlo.
+
+## 🧠 Resultados del virality_predictor (lote inicial)
+
+Análisis de los clips con `virality_predictor`. El servicio falló de forma
+intermitente en varios clips ese día (cofre mítico, ASMR, POV, battle pass y
+code drop quedaron sin puntuar — es un fallo del analizador, no de calidad;
+reintenta cuando quieras). Scores normalizados 0-100 (proxy predictivo):
+
+| Pieza | Overall | Viral pot. | Hook (0-3s) | Engagement | Pico |
+|---|---|---|---|---|---|
+| **Tier List** 🥇 | 48 | 46 | 33 | 41 | s5 |
+| **Fuego vs Rayo** 🥈 | 47 | 44 | 32 | 40 | s5 |
+| **Showcase skins** 🥉 | 46 | 43 | 31 | 37 | s5 |
+| **Trailer** | 45 | 44 | 30 | 35 | s5 |
+
+**Orden de publicación sugerido (de los puntuados):** Tier List → Fuego vs Rayo
+→ Showcase → Trailer.
+
+### ⚠️ Hallazgo clave (aplica a TODOS los clips)
+Todos tienen **sustain alto (100)** pero **hook bajo (30-33)** y el **pico de
+atención cae en el segundo 5** (el final), no al principio. Para Shorts/Reels esto
+es justo lo contrario de lo ideal. Acciones en la edición antes de publicar:
+
+- **Adelanta el impacto al primer segundo**: corta el clip para empezar por el
+  fotograma de mayor energía (la colisión/explosión/flash), no por el arranque.
+- **Texto-hook enorme en t=0s** ("¿CUÁL GANA?", "SALIÓ MÍTICO 😱", "1 entre 250").
+- **Loop**: enlaza el último frame con el primero para forzar el re-watch.
+- Reanaliza la versión recortada y quédate con la de mayor hook.
