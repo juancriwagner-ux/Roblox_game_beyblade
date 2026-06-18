@@ -32,6 +32,24 @@ tu editor (CapCut/Premiere) y publica según el calendario.
 > el editor: los modelos no rotulan texto fiable. Las captions/títulos/tags están
 > abajo y en `youtube-seo-and-voiceover.md`.
 
+### 🔁 v2 — versiones con el hook al inicio (recomendadas)
+
+Regeneradas tras el análisis de viralidad: el pico de energía (explosión / flash
+/ reveal) ahora ocurre en el **primer segundo** en vez de al final, para subir el
+hook de Shorts/Reels. Usa estas como versión principal; las v1 quedan de respaldo.
+
+| # | Pieza | job id v2 (hook al inicio) |
+|---|---|---|
+| 1 | Trailer de lanzamiento (16:9) | `b50076d3-dc6b-4a3a-af95-6a3a1f22e9ff` |
+| 2 | "SALIÓ MÍTICO" (cofre) | `6e2e49eb-14d6-4efa-ab19-ce35478444ea` |
+| 3 | Fuego vs Rayo | `667e6a95-6c9d-4ec6-8df3-5930baa48cb6` |
+| 4 | Spin ASMR | `ecf67dcc-bfd7-4254-9b6b-defbd4922b17` |
+| 5 | Tier List | `3951f7a5-9cf5-4a65-ae5b-1f6fbc5c6d9a` |
+| 6 | POV racha x10 | `471fa53d-6ab8-4def-90d4-833f06f7f2f1` |
+| 7 | Showcase de skins | `0841bc3b-dd80-48fd-9fda-ba6c14028dd8` |
+| 8 | Flex Battle Pass | `94cadee6-9963-4c12-a06f-152192e12415` |
+| 9 | Code drop | `2912b2de-3fea-428a-9ad3-504dcb22c8db` |
+
 ## 🎯 Estrategia
 
 - **80% vertical 9:16** (TikTok / Reels / Shorts) para alcance; **20% 16:9**
