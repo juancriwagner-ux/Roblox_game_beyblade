@@ -73,6 +73,19 @@ function Assets.music(key: string): string?
 	return nil
 end
 
+-- Tileable textures (upload the image, paste the ID). Applied to world geometry.
+Assets.Textures = {
+	CityFacade = "rbxassetid://0", -- sci-fi building wall texture
+}
+
+function Assets.texture(key: string): string?
+	local v = Assets.Textures[key]
+	if v ~= nil and v ~= "rbxassetid://0" then
+		return v
+	end
+	return nil
+end
+
 -- True when a real ID has been pasted in (not the 0 placeholder).
 function Assets.has(key: string): boolean
 	local v = Assets.Images[key]

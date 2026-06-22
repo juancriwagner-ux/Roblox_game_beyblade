@@ -11,6 +11,7 @@ local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ModelBuilder = require(ReplicatedStorage.Shared.ModelBuilder)
+local Assets = require(ReplicatedStorage.Shared.Assets)
 
 local Hub = {}
 
@@ -165,11 +166,23 @@ end
 local function buildBuilding(parent: Instance, cf: CFrame, w: number, d: number, h: number)
 	local accent = randomAccent()
 	-- Body.
-	part({
+	local body = part({
 		Class = "Part", Name = "Tower", Size = Vector3.new(w, h, d), CFrame = cf * CFrame.new(0, h / 2, 0),
 		Material = Enum.Material.Glass, Color = Color3.fromRGB(22 + rng:NextInteger(0, 16), 26 + rng:NextInteger(0, 16), 40 + rng:NextInteger(0, 20)),
 		Reflectance = 0.08,
 	}, parent)
+	-- Premium facade texture (only if uploaded; applied to the visible faces).
+	local facade = Assets.texture("CityFacade")
+	if facade then
+		for _, face in { Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right } do
+			local tex = Instance.new("Texture")
+			tex.Texture = facade
+			tex.Face = face
+			tex.StudsPerTileU = 18
+			tex.StudsPerTileV = 18
+			tex.Parent = body
+		end
+	end
 	-- Window bands (front + right side) — emissive rows.
 	local rows = math.clamp(math.floor(h / 16), 2, 6)
 	for r = 1, rows do
