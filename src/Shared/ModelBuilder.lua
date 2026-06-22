@@ -123,6 +123,7 @@ local function addAura(core: BasePart, palette: Palette, rarity: string)
 	light.Color = palette.Primary
 	light.Range = 8 + (RarityData.Tiers[rarity] and RarityData.Tiers[rarity].Glow or 0) * 4
 	light.Brightness = 1.5 + (palette.Emissive or 0)
+	light.Shadows = false
 	light.Parent = core
 end
 
