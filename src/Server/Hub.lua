@@ -315,6 +315,88 @@ local function buildGarden(parent: Instance)
 	part({ Class = "Part", Name = "Trophy", Shape = Enum.PartType.Ball, Size = Vector3.new(12, 12, 12), CFrame = CFrame.new(GARDEN_CENTER + Vector3.new(0, 18, 0)), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 196, 32), CanCollide = false }, parent)
 end
 
+-- ===== Shop district (market stalls) ==================================
+local function buildShopDistrict(parent: Instance)
+	-- A market street along +X with colourful awning stalls on both sides.
+	local STALL = ACCENTS
+	for i = 0, 5 do
+		local x = 116 + i * 18
+		for _, side in { -1, 1 } do
+			local z = side * 16
+			local color = STALL[((i + (side == 1 and 1 or 0)) % #STALL) + 1]
+			part({ Class = "Part", Name = "Stall", Size = Vector3.new(12, 8, 12), CFrame = CFrame.new(x, 4, z), Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(46, 50, 64) }, parent)
+			-- Striped awning.
+			part({ Class = "Part", Name = "Awning", Size = Vector3.new(15, 1, 15), CFrame = CFrame.new(x, 8.6, z) * CFrame.Angles(math.rad(side * -8), 0, 0), Material = Enum.Material.Fabric, Color = color, CanCollide = false }, parent)
+			-- Counter glow.
+			part({ Class = "Part", Name = "Counter", Size = Vector3.new(12.4, 0.6, 3), CFrame = CFrame.new(x, 5.4, z + side * 6.5), Material = Enum.Material.Neon, Color = color, CanCollide = false }, parent)
+		end
+	end
+	-- Big floating "TIENDA" hologram over the entrance.
+	local sign = part({ Class = "Part", Name = "ShopSign", Size = Vector3.new(40, 12, 1), CFrame = CFrame.new(150, 22, 0) * CFrame.Angles(0, math.rad(90), 0), Material = Enum.Material.Neon, Color = Color3.fromRGB(0, 224, 255), Transparency = 0.2, CanCollide = false }, parent)
+	local g = Instance.new("SurfaceGui")
+	g.Face = Enum.NormalId.Back
+	g.Parent = sign
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.new(1, 0, 1, 0)
+	t.BackgroundTransparency = 1
+	t.Font = Enum.Font.GothamBold
+	t.TextScaled = true
+	t.TextColor3 = Color3.fromRGB(10, 20, 30)
+	t.Text = "🛒 MERCADO"
+	t.Parent = g
+end
+
+-- ===== Spectator crowd (static dummies) ===============================
+local SKIN_TONES = { Color3.fromRGB(255, 220, 178), Color3.fromRGB(234, 192, 134), Color3.fromRGB(198, 134, 88), Color3.fromRGB(141, 85, 53), Color3.fromRGB(90, 56, 37) }
+
+local function npc(parent: Instance, pos: Vector3, faceAngle: number)
+	local shirt = randomAccent()
+	local pants = Color3.fromRGB(rng:NextInteger(30, 70), rng:NextInteger(30, 70), rng:NextInteger(40, 90))
+	local skin = SKIN_TONES[rng:NextInteger(1, #SKIN_TONES)]
+	local cf = CFrame.new(pos) * CFrame.Angles(0, faceAngle, 0)
+	part({ Class = "Part", Name = "Torso", Size = Vector3.new(2, 2.2, 1), CFrame = cf * CFrame.new(0, 3.2, 0), Material = Enum.Material.SmoothPlastic, Color = shirt, CanCollide = false }, parent)
+	part({ Class = "Part", Name = "Head", Shape = Enum.PartType.Ball, Size = Vector3.new(1.3, 1.3, 1.3), CFrame = cf * CFrame.new(0, 4.9, 0), Material = Enum.Material.SmoothPlastic, Color = skin, CanCollide = false }, parent)
+	part({ Class = "Part", Name = "Legs", Size = Vector3.new(1.8, 2, 0.9), CFrame = cf * CFrame.new(0, 1.2, 0), Material = Enum.Material.SmoothPlastic, Color = pants, CanCollide = false }, parent)
+end
+
+local function buildCrowd(parent: Instance)
+	-- Ring of spectators around the arena, facing the centre.
+	for i = 1, 56 do
+		local angle = (i / 56) * math.pi * 2 + rng:NextNumber(-0.03, 0.03)
+		local r = 80 + rng:NextNumber(-2, 4)
+		local pos = Vector3.new(math.cos(angle) * r, 0, math.sin(angle) * r)
+		npc(parent, pos, -angle + math.rad(90))
+	end
+	-- A few clusters wandering the plaza.
+	for _ = 1, 24 do
+		local pos = Vector3.new(rng:NextNumber(-150, 150), 0, rng:NextNumber(-150, 150))
+		if pos.Magnitude > 74 then -- keep off the arena dish
+			npc(parent, pos, rng:NextNumber(0, math.pi * 2))
+		end
+	end
+end
+
+-- ===== Ring road + distant skyline backdrop ===========================
+local function buildRingRoad(parent: Instance)
+	for i = 1, 72 do
+		local angle = (i / 72) * math.pi * 2
+		local pos = Vector3.new(math.cos(angle) * 150, 0.25, math.sin(angle) * 150)
+		part({ Class = "Part", Name = "RoadDash", Size = Vector3.new(5, 0.3, 1.6), CFrame = CFrame.new(pos) * CFrame.Angles(0, -angle, 0), Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 200, 60), Transparency = 0.25, CanCollide = false }, parent)
+	end
+end
+
+local function buildSkylineBackdrop(parent: Instance)
+	-- Far, low-detail towers for skyline depth (no windows/lights).
+	for i = 1, 40 do
+		local angle = (i / 40) * math.pi * 2 + rng:NextNumber(-0.04, 0.04)
+		local r = 470 + rng:NextNumber(-30, 60)
+		local h = rng:NextNumber(180, 340)
+		local pos = Vector3.new(math.cos(angle) * r, h / 2, math.sin(angle) * r)
+		part({ Class = "Part", Name = "FarTower", Size = Vector3.new(rng:NextNumber(28, 50), h, rng:NextNumber(28, 50)), CFrame = CFrame.new(pos), Material = Enum.Material.Glass, Color = Color3.fromRGB(24, 28, 44), Reflectance = 0.1 }, parent)
+		part({ Class = "Part", Name = "FarTop", Size = Vector3.new(8, 2, 8), CFrame = CFrame.new(pos + Vector3.new(0, h / 2, 0)), Material = Enum.Material.Neon, Color = randomAccent(), CanCollide = false }, parent)
+	end
+end
+
 function Hub.build(): Vector3
 	local existing = Workspace:FindFirstChild("Baseplate")
 	if existing then
@@ -330,9 +412,13 @@ function Hub.build(): Vector3
 	buildPlaza(world)
 	buildArena(world)
 	buildCity(world)
+	buildSkylineBackdrop(world)
+	buildRingRoad(world)
 	buildLamps(world)
 	buildBillboards(world)
 	buildMonuments(world)
+	buildShopDistrict(world)
+	buildCrowd(world)
 	buildGarden(world)
 
 	-- Spawn pad near the arena.
