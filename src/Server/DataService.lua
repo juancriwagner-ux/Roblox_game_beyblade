@@ -27,8 +27,17 @@ local template = require(script.Parent.ProfileTemplate)
 local DataService = {}
 
 local STORE_NAME = "BeybladeProfiles_v2"
-local store = DataStoreService:GetDataStore(STORE_NAME)
 local useStudioMock = RunService:IsStudio() -- avoid DataStore errors in solo test
+
+-- Lazy DataStore handle: GetDataStore throws in an unpublished place, and we
+-- never touch the store in Studio (mock), so only fetch it on real use.
+local store: DataStore? = nil
+local function getStore(): DataStore
+	if not store then
+		store = DataStoreService:GetDataStore(STORE_NAME)
+	end
+	return store :: DataStore
+end
 
 -- A lock older than this (seconds) is considered dead and may be stolen.
 local LOCK_TIMEOUT = 60
@@ -70,7 +79,7 @@ local function acquire(player: Player, sessionId: string): (any?, boolean)
 		local got = false
 		local loaded: any = nil
 		local ok, err = pcall(function()
-			store:UpdateAsync(key, function(stored)
+			getStore():UpdateAsync(key, function(stored)
 				stored = stored or { data = nil, lock = nil }
 				local lock = stored.lock
 				local now = os.time()
@@ -111,7 +120,7 @@ local function commit(player: Player, finalize: boolean): boolean
 	data.LastSeenUnix = os.time()
 	local owned = true
 	local ok, err = pcall(function()
-		store:UpdateAsync(keyFor(player), function(stored)
+		getStore():UpdateAsync(keyFor(player), function(stored)
 			stored = stored or { data = nil, lock = nil }
 			local lock = stored.lock
 			-- Only write if we own the lock (or it's gone stale and ours).

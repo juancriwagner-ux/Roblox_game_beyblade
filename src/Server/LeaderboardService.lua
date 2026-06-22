@@ -14,10 +14,16 @@ local LeaderboardService = {}
 
 local isStudio = RunService:IsStudio()
 
-local BOARDS = {
-	Trophies = DataStoreService:GetOrderedDataStore("LB_Trophies_v1"),
-	Wins = DataStoreService:GetOrderedDataStore("LB_Wins_v1"),
-}
+-- Lazy ordered-store handles (GetOrderedDataStore throws in an unpublished
+-- place; we never call these in Studio, so fetch them only on real use).
+local BOARD_NAMES = { Trophies = "LB_Trophies_v1", Wins = "LB_Wins_v1" }
+local boardCache: { [string]: OrderedDataStore } = {}
+local function getBoard(name: string): OrderedDataStore
+	if not boardCache[name] then
+		boardCache[name] = DataStoreService:GetOrderedDataStore(BOARD_NAMES[name])
+	end
+	return boardCache[name]
+end
 
 -- Cached top lists: board -> { {Name, Value, UserId} }
 local cache: { [string]: { any } } = { Trophies = {}, Wins = {} }
@@ -26,7 +32,7 @@ local function refresh(board: string)
 	if isStudio then
 		return
 	end
-	local store = BOARDS[board]
+	local store = getBoard(board)
 	local ok, pages = pcall(function()
 		return store:GetSortedAsync(false, 50)
 	end)
@@ -65,10 +71,10 @@ function LeaderboardService.update(player: Player)
 	end
 	local key = tostring(player.UserId)
 	pcall(function()
-		BOARDS.Trophies:SetAsync(key, math.max(0, math.floor(p.Trophies)))
+		getBoard("Trophies"):SetAsync(key, math.max(0, math.floor(p.Trophies)))
 	end)
 	pcall(function()
-		BOARDS.Wins:SetAsync(key, math.max(0, math.floor(p.Stats.Wins)))
+		getBoard("Wins"):SetAsync(key, math.max(0, math.floor(p.Stats.Wins)))
 	end)
 end
 

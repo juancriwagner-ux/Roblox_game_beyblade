@@ -750,7 +750,7 @@ local function buildExtras(scroll: ScrollingFrame)
 		UITheme.corner(8, b)
 		b.MouseButton1Click:Connect(function()
 			profile.Settings[key] = not profile.Settings[key]
-			(Net.get("SaveSettings") :: RemoteFunction):InvokeServer({ Music = profile.Settings.Music, Sfx = profile.Settings.Sfx })
+			;(Net.get("SaveSettings") :: RemoteFunction):InvokeServer({ Music = profile.Settings.Music, Sfx = profile.Settings.Sfx })
 			local nowOn = profile.Settings[key]
 			b.Text = ("%s: %s"):format(label, nowOn and "ON" or "OFF")
 			b.BackgroundColor3 = nowOn and UITheme.Color.Good or UITheme.Color.PanelLight
