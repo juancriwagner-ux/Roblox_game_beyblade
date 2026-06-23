@@ -86,6 +86,27 @@ function Assets.texture(key: string): string?
 	return nil
 end
 
+-- Premium 3D blade meshes. After importing a GLB in Studio (Import 3D), open
+-- the resulting MeshPart and copy its MeshId + TextureID here. When MeshId is
+-- set, ModelBuilder renders that blade as the premium mesh everywhere (battle,
+-- collection, spawns). Scale/Rot let you fine-tune size + orientation once.
+export type BladeMesh = { MeshId: string, TextureId: string, Scale: number, RotX: number, RotY: number, RotZ: number }
+
+Assets.Blades = {
+	celestial_prime = { MeshId = "rbxassetid://0", TextureId = "rbxassetid://0", Scale = 2, RotX = 0, RotY = 0, RotZ = -90 },
+	void_reaper = { MeshId = "rbxassetid://0", TextureId = "rbxassetid://0", Scale = 2, RotX = 0, RotY = 0, RotZ = -90 },
+	magma_core = { MeshId = "rbxassetid://0", TextureId = "rbxassetid://0", Scale = 2, RotX = 0, RotY = 0, RotZ = -90 },
+} :: { [string]: BladeMesh }
+
+-- Returns the mesh def for a blade only when a real MeshId is set.
+function Assets.bladeMesh(bladeId: string): BladeMesh?
+	local m = Assets.Blades[bladeId]
+	if m and m.MeshId ~= "rbxassetid://0" then
+		return m
+	end
+	return nil
+end
+
 -- True when a real ID has been pasted in (not the 0 placeholder).
 function Assets.has(key: string): boolean
 	local v = Assets.Images[key]

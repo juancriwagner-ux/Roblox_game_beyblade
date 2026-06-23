@@ -9,6 +9,7 @@
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 local ModelBuilder = require(ReplicatedStorage.Shared.ModelBuilder)
 local Assets = require(ReplicatedStorage.Shared.Assets)
@@ -367,9 +368,14 @@ local function npc(parent: Instance, pos: Vector3, faceAngle: number)
 	local pants = Color3.fromRGB(rng:NextInteger(30, 70), rng:NextInteger(30, 70), rng:NextInteger(40, 90))
 	local skin = SKIN_TONES[rng:NextInteger(1, #SKIN_TONES)]
 	local cf = CFrame.new(pos) * CFrame.Angles(0, faceAngle, 0)
-	part({ Class = "Part", Name = "Torso", Size = Vector3.new(2, 2.2, 1), CFrame = cf * CFrame.new(0, 3.2, 0), Material = Enum.Material.SmoothPlastic, Color = shirt, CanCollide = false }, parent)
-	part({ Class = "Part", Name = "Head", Shape = Enum.PartType.Ball, Size = Vector3.new(1.3, 1.3, 1.3), CFrame = cf * CFrame.new(0, 4.9, 0), Material = Enum.Material.SmoothPlastic, Color = skin, CanCollide = false }, parent)
-	part({ Class = "Part", Name = "Legs", Size = Vector3.new(1.8, 2, 0.9), CFrame = cf * CFrame.new(0, 1.2, 0), Material = Enum.Material.SmoothPlastic, Color = pants, CanCollide = false }, parent)
+	local fan = Instance.new("Model")
+	fan.Name = "Fan"
+	local torso = part({ Class = "Part", Name = "Torso", Size = Vector3.new(2, 2.2, 1), CFrame = cf * CFrame.new(0, 3.2, 0), Material = Enum.Material.SmoothPlastic, Color = shirt, CanCollide = false }, fan)
+	part({ Class = "Part", Name = "Head", Shape = Enum.PartType.Ball, Size = Vector3.new(1.3, 1.3, 1.3), CFrame = cf * CFrame.new(0, 4.9, 0), Material = Enum.Material.SmoothPlastic, Color = skin, CanCollide = false }, fan)
+	part({ Class = "Part", Name = "Legs", Size = Vector3.new(1.8, 2, 0.9), CFrame = cf * CFrame.new(0, 1.2, 0), Material = Enum.Material.SmoothPlastic, Color = pants, CanCollide = false }, fan)
+	fan.PrimaryPart = torso
+	fan.Parent = parent
+	CollectionService:AddTag(fan, "Fan")
 end
 
 local function buildCrowd(parent: Instance)

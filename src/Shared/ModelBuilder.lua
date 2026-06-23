@@ -10,6 +10,7 @@ local BeybladeData = require(script.Parent.BeybladeData)
 local CategoryData = require(script.Parent.CategoryData)
 local RarityData = require(script.Parent.RarityData)
 local SkinData = require(script.Parent.SkinData)
+local Assets = require(script.Parent.Assets)
 
 local ModelBuilder = {}
 
@@ -127,12 +128,76 @@ local function addAura(core: BasePart, palette: Palette, rarity: string)
 	light.Parent = core
 end
 
+-- Premium mesh variant: an invisible Core (PrimaryPart, keeps the spin axis
+-- the procedural model uses) plus a MeshHolder displaying the imported GLB.
+local function buildMesh(opts: BuildOptions, meshDef: any, rarity: string, palette: Palette): Model
+	local def = BeybladeData.get(opts.BladeId)
+	local scale = opts.Scale or 1
+	local recipe = (def :: any).Model
+	local radius = recipe.Radius * scale
+	local height = recipe.Height * scale
+	local anchored = opts.Anchored == true
+
+	local model = Instance.new("Model")
+	model.Name = (def :: any).Name
+
+	-- Invisible core = pivot/spin reference (matches the procedural orientation).
+	local core = makePart({
+		Class = "Part", Name = "Core", Size = Vector3.new(radius * 1.6, height, radius * 1.6),
+		Transparency = 1, Anchored = anchored, CanCollide = false,
+	})
+	core.CFrame = CFrame.new()
+	model.PrimaryPart = core
+	core.Parent = model
+
+	-- Mesh holder, oriented so the spinners (which apply a Z 90° tilt) keep it
+	-- upright; RotX/Y/Z let you fine-tune per imported mesh.
+	local rel = CFrame.Angles(math.rad(meshDef.RotX or 0), math.rad(meshDef.RotY or 0), math.rad(meshDef.RotZ or -90))
+	local holder = makePart({
+		Class = "Part", Name = "MeshHolder", Size = Vector3.new(1, 1, 1),
+		Color = palette.Primary, Material = Enum.Material.SmoothPlastic,
+		Anchored = anchored, CanCollide = false,
+	})
+	holder.CFrame = core.CFrame * rel
+	if not anchored then
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = core
+		weld.Part1 = holder
+		weld.Parent = holder
+	end
+	local sm = Instance.new("SpecialMesh")
+	sm.MeshType = Enum.MeshType.FileMesh
+	sm.MeshId = meshDef.MeshId
+	if meshDef.TextureId and meshDef.TextureId ~= "rbxassetid://0" then
+		sm.TextureId = meshDef.TextureId
+	end
+	local ms = (meshDef.Scale or 1) * scale
+	sm.Scale = Vector3.new(ms, ms, ms)
+	sm.Parent = holder
+	holder.Parent = model
+
+	if opts.WithAura ~= false then
+		addAura(core, palette, rarity)
+	end
+	model:SetAttribute("BladeId", opts.BladeId)
+	model:SetAttribute("Rarity", rarity)
+	model:SetAttribute("SkinId", opts.SkinId or "default")
+	return model
+end
+
 -- Main entry. Returns an un-parented Model with PrimaryPart = Core.
 function ModelBuilder.build(opts: BuildOptions): Model
 	local def = BeybladeData.get(opts.BladeId)
 	assert(def, "ModelBuilder: unknown blade " .. tostring(opts.BladeId))
 	local rarity = opts.Rarity or def.Rarity
 	local palette = resolvePalette(opts.BladeId, opts.SkinId)
+
+	-- Premium mesh path (only when a real MeshId has been pasted in Assets).
+	local meshDef = Assets.bladeMesh(opts.BladeId)
+	if meshDef then
+		return buildMesh(opts, meshDef, rarity, palette)
+	end
+
 	local scale = opts.Scale or 1
 	local recipe = def.Model
 	local radius = recipe.Radius * scale

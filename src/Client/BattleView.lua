@@ -21,6 +21,7 @@ local UITheme = require(script.Parent.UITheme)
 local ClientState = require(script.Parent.ClientState)
 local Sound = require(script.Parent.Sound)
 local MusicController = require(script.Parent.MusicController)
+local CrowdController = require(script.Parent.CrowdController)
 
 local BattleView = {}
 
@@ -192,6 +193,7 @@ local function impact(pos: Vector3, color: Color3, big: boolean)
 	if big then
 		shockwave(pos, Color3.fromRGB(255, 255, 255), 0.7)
 	end
+	CrowdController.pop() -- the audience reacts to every clash
 end
 
 local function makeFlash(gui: ScreenGui)
@@ -305,6 +307,7 @@ end
 local function runCinematic(sides: any, rounds: any, mineWon: boolean, gui: ScreenGui, opts: any)
 	playing = true
 	MusicController.setBattle(true)
+	CrowdController.setHype(true)
 	local prevType = camera.CameraType
 	camera.CameraType = Enum.CameraType.Scriptable
 
@@ -457,6 +460,7 @@ local function runCinematic(sides: any, rounds: any, mineWon: boolean, gui: Scre
 	end
 	camera.CameraType = prevType
 	MusicController.setBattle(false)
+	CrowdController.setHype(false)
 	playing = false
 end
 

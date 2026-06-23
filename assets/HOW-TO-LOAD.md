@@ -48,14 +48,23 @@ Formato: `Skin_molten = "rbxassetid://123456789"`.
    **MeshPart** (o un Modelo con MeshParts) en el **Workspace**.
 4. Selecciónalo → en **Propiedades** verás **MeshId** y **TextureID**.
 
-**Cómo usarlas (2 opciones):**
-- **Rápido (display):** arrastra el MeshPart donde quieras (un monumento, una
-  vitrina en el mercado, pantalla de carga). Ánclalo (Anchored ✔).
-- **Integrarlas al juego (lo potente):** pásame el **MeshId** (y TextureID) de
-  cada trompo y yo conecto las mallas para que **reemplacen el modelo procedural**
-  en batalla, colección y cofres. (Añado un campo `MeshId` por blade y hago que
-  el constructor use la malla cuando exista.) Es un paso que hago yo; tú solo me
-  das los IDs.
+**Integrarlas al juego (ya está cableado — solo pegas IDs):**
+1. Tras importar, selecciona el **MeshPart** → en Propiedades copia **MeshId** y
+   **TextureID**.
+2. Pégalos en `src/Shared/Assets.lua` → tabla `Assets.Blades`, en el blade que
+   corresponda. Ejemplo:
+   ```lua
+   celestial_prime = { MeshId = "rbxassetid://123", TextureId = "rbxassetid://456", Scale = 2, RotX = 0, RotY = 0, RotZ = -90 },
+   ```
+3. En cuanto el `MeshId` deja de ser `0`, **ese trompo usa la malla premium en
+   todo el juego** (batalla, colección, cofres, monumentos) — si no, sigue el
+   modelo procedural.
+4. Si la malla sale **muy grande/chica**, ajusta `Scale`. Si sale **acostada o
+   torcida**, ajusta `RotX/RotY/RotZ` (en grados) hasta que gire derecha como un
+   trompo. (Por defecto `RotZ = -90` ya la endereza para la mayoría.)
+
+> Alternativa rápida (display): también puedes arrastrar el MeshPart a la ciudad
+> como adorno/monumento sin tocar código.
 
 > Nota: Roblox importa **.glb/.gltf, .fbx y .obj**. Si una malla sale muy
 > grande/chica, ajusta la escala en el importador o el `Size` del MeshPart.

@@ -16,6 +16,7 @@ local Sound = require(script.Sound)
 local Responsive = require(script.Responsive)
 local TutorialController = require(script.TutorialController)
 local BossController = require(script.BossController)
+local CrowdController = require(script.CrowdController)
 local MusicController = require(script.MusicController)
 
 local player = Players.LocalPlayer
@@ -35,6 +36,7 @@ Toasts.start(gui)
 App.start(gui)
 TutorialController.start(gui)
 BossController.start(gui)
+CrowdController.start()
 MusicController.start()
 
 -- Honor the player's audio settings.
