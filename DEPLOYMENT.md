@@ -90,13 +90,14 @@ Leyenda: 🧑‍💻 = lo haces TÚ · 🤖 = ya está hecho en el código.
 - [ ] 🧑‍💻 Crea los **Badges** de logros (Configure → **Badges**) y pega sus IDs en
       `src/Shared/AchievementData.lua` (campo `Badge`).
 - [ ] 🧑‍💻 Revisa/edita los **códigos** en `src/Server/CodesService.lua`
-      (`LAUNCH`, `BEYBLADE`, `SPINSTORM`, `FREEMYTHIC`).
+      (`LAUNCH`, `BEYBLADE`, `SPINSTORM`, `FREEBLADE`).
 
-### ⚠️ Cumplimiento: odds de cajas (importante)
-Los Núcleos se compran con Robux y el **Cofre Élite** se abre con Núcleos → según
-la **Paid Random Items Policy** de Roblox, debes **mostrar las probabilidades**
-de rareza de las cajas dentro del juego. Avísame y te agrego un **panel de odds**
-en la pantalla de Cofres (rápido de añadir y te deja en regla).
+### ✅ Cumplimiento: odds de cajas (ya resuelto)
+Los Núcleos se compran con Robux y el **Cofre Élite** se abre con Núcleos → la
+**Paid Random Items Policy** de Roblox exige mostrar las probabilidades. **Ya
+está implementado**: cada tarjeta de cofre muestra sus odds exactas por rareza
+(calculadas de los mismos pesos que usa el servidor). Si cambias pesos/sesgos en
+`RarityData`/`CrateData`, las odds mostradas se actualizan solas.
 
 ---
 

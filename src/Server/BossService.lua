@@ -40,8 +40,17 @@ local model: Model? = nil
 local spinConn: RBXScriptConnection? = nil
 local sessionId = 0
 
-local function broadcast()
-	(Net.get("BossUpdate") :: RemoteEvent):FireAllClients({
+local lastBroadcast = 0
+
+local function broadcast(force: boolean?)
+	-- Every attack calls this; with a full server that's a lot of FireAllClients.
+	-- Throttle HP-tick updates to ~4/s, but always send state transitions.
+	local now = os.clock()
+	if not force and now - lastBroadcast < 0.25 then
+		return
+	end
+	lastBroadcast = now
+	;(Net.get("BossUpdate") :: RemoteEvent):FireAllClients({
 		Active = state.Active,
 		Name = state.Name,
 		HP = math.floor(state.HP),
@@ -167,7 +176,7 @@ local function endBoss(defeated: boolean, mySession: number)
 	end
 	contributions = {}
 	state.NextAt = os.time() + BossData.IdleBetween
-	broadcast()
+	broadcast(true)
 end
 
 local function spawnBoss()
@@ -179,7 +188,7 @@ local function spawnBoss()
 	state.EndsAt = os.time() + BossData.Duration
 	contributions = {}
 	buildModel()
-	broadcast()
+	broadcast(true)
 	for _, player in Players:GetPlayers() do
 		(Net.get("Notify") :: RemoteEvent):FireClient(player, ("👹 ¡%s ha aparecido! ¡Atáquenlo juntos!"):format(state.Name), "error")
 	end

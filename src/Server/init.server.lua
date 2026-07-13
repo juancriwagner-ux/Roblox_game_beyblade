@@ -45,11 +45,15 @@ BossService.init()
 local lastCall: { [Player]: { [string]: number } } = {}
 local MIN_INTERVAL: { [string]: number } = {
 	StartBattle = 0.5,
+	StartTeamBattle = 0.5,
 	BuySkin = 0.4,
+	OpenCrate = 0.5,
+	BuyPremiumPass = 0.5,
 	RedeemCode = 1.0,
 	ClaimQuest = 0.3,
 	PrestigeBlade = 0.3,
 	ClaimDaily = 0.5,
+	SpectateBattle = 1.0,
 	default = 0.15,
 }
 

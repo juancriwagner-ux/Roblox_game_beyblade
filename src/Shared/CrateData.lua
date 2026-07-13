@@ -40,4 +40,39 @@ function CrateData.get(id: string): Crate?
 	return CrateData.Crates[id]
 end
 
+-- Exact drop odds for a crate, mirroring GachaService's roll: RarityData
+-- weights biased by crate.Bias, then tiers below MinRarity folded into the
+-- floor tier. Returns { { Rarity = id, Percent = number } } ordered low→high.
+-- Shown in the shop UI (required disclosure for paid random items).
+function CrateData.odds(crateId: string): { { Rarity: string, Percent: number } }
+	local RarityData = require(script.Parent.RarityData)
+	local crate = CrateData.Crates[crateId]
+	if not crate then
+		return {}
+	end
+	-- Raw biased weights (same formula as RarityData.roll).
+	local weights: { [string]: number } = {}
+	local total = 0
+	for i, id in RarityData.Order do
+		local w = RarityData.Tiers[id].Weight * (1 + crate.Bias * (i - 1) * 0.6)
+		weights[id] = w
+		total += w
+	end
+	-- Fold everything below the guaranteed floor into the floor tier.
+	local floorIndex = crate.MinRarity and table.find(RarityData.Order, crate.MinRarity) or 1
+	local probs: { [string]: number } = {}
+	for i, id in RarityData.Order do
+		local p = weights[id] / total
+		local target = RarityData.Order[math.max(i, floorIndex)]
+		probs[target] = (probs[target] or 0) + p
+	end
+	local out = {}
+	for _, id in RarityData.Order do
+		if probs[id] and probs[id] > 0 then
+			table.insert(out, { Rarity = id, Percent = probs[id] * 100 })
+		end
+	end
+	return out
+end
+
 return CrateData

@@ -76,9 +76,14 @@ function AchievementData.metricValue(profile: any, metric: string): number
 		end
 		return n
 	elseif metric == "blades_owned" then
+		-- Distinct blade models (a blade owned at two rarities counts once).
+		local seen: { [string]: boolean } = {}
 		local n = 0
-		for _ in profile.Inventory do
-			n += 1
+		for _, entry in profile.Inventory do
+			if not seen[entry.BladeId] then
+				seen[entry.BladeId] = true
+				n += 1
+			end
 		end
 		return n
 	end

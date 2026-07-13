@@ -170,8 +170,14 @@ function DataService.onPush(fn: (Player) -> ())
 	table.insert(pushListeners, fn)
 end
 
--- Push the latest profile to the owning client.
-function DataService.push(player: Player)
+-- Push the latest profile to the owning client. Pushes are COALESCED: gameplay
+-- code often mutates the profile several times in one moment (battle rewards =
+-- currency + XP + quests + history), so we batch them into a single snapshot,
+-- FireClient and listener pass per frame instead of ~8.
+local pendingPush: { [Player]: boolean } = {}
+
+local function flushPush(player: Player)
+	pendingPush[player] = nil
 	local snap = DataService.snapshot(player)
 	if snap then
 		(Net.get("ProfileUpdated") :: RemoteEvent):FireClient(player, snap)
@@ -179,6 +185,14 @@ function DataService.push(player: Player)
 	for _, fn in pushListeners do
 		task.spawn(fn, player)
 	end
+end
+
+function DataService.push(player: Player)
+	if pendingPush[player] then
+		return
+	end
+	pendingPush[player] = true
+	task.defer(flushPush, player)
 end
 
 -- Acquire the lock and load the profile. Returns the profile, or nil if the

@@ -68,6 +68,8 @@ function QuestService.report(player: Player, eventType: string, amount: number?)
 	if not p then
 		return
 	end
+	-- Roll fresh quests if the calendar day changed mid-session.
+	QuestService.ensureDaily(player)
 	local changed = false
 	for _, q in p.Quests.List do
 		if q.Type == eventType and not q.Claimed and q.Progress < q.Target then
@@ -88,6 +90,7 @@ function QuestService.claim(player: Player, questId: string): any
 	if not p then
 		return { ok = false }
 	end
+	QuestService.ensureDaily(player)
 	for _, q in p.Quests.List do
 		if q.Id == questId then
 			if q.Claimed then

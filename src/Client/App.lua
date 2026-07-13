@@ -375,19 +375,35 @@ local function buildGacha(scroll: ScrollingFrame)
 		local curColor = crate.Currency == "Cores" and UITheme.Color.Cores or UITheme.Color.Bolts
 		local canAfford = (profile.Currencies[crate.Currency] or 0) >= crate.Price
 
-		local card = UITheme.frame({ Size = UDim2.new(1, -6, 0, 110), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = i }, scroll)
+		local card = UITheme.frame({ Size = UDim2.new(1, -6, 0, 134), BackgroundColor3 = UITheme.Color.Panel, LayoutOrder = i }, scroll)
 		UITheme.corner(14, card)
 		UITheme.stroke(crate.Color, 2.5, card)
 		-- Glowing crate emblem.
-		local emblem = UITheme.frame({ Size = UDim2.new(0, 78, 0, 78), Position = UDim2.new(0, 16, 0.5, -39), BackgroundColor3 = crate.Color }, card)
+		local emblem = UITheme.frame({ Size = UDim2.new(0, 78, 0, 78), Position = UDim2.new(0, 16, 0, 14), BackgroundColor3 = crate.Color }, card)
 		UITheme.corner(14, emblem)
 		UITheme.label({ Size = UDim2.new(1, 0, 1, 0), Text = "🎁", TextSize = 40 }, emblem)
 
-		UITheme.label({ Size = UDim2.new(1, -260, 0, 26), Position = UDim2.new(0, 108, 0, 16), Text = crate.Name, TextColor3 = crate.Color, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left }, card)
+		UITheme.label({ Size = UDim2.new(1, -260, 0, 26), Position = UDim2.new(0, 108, 0, 12), Text = crate.Name, TextColor3 = crate.Color, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left }, card)
 		UITheme.label({
-			Size = UDim2.new(1, -260, 0, 44), Position = UDim2.new(0, 108, 0, 44), Text = crate.Desc,
+			Size = UDim2.new(1, -260, 0, 40), Position = UDim2.new(0, 108, 0, 40), Text = crate.Desc,
 			TextColor3 = UITheme.Color.SubText, Font = UITheme.FontRegular, TextSize = 14,
 			TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true,
+		}, card)
+
+		-- Drop odds disclosure (required for paid random items). Rich text with
+		-- each rarity tinted in its own colour.
+		local segments = {}
+		for _, o in CrateData.odds(crateId) do
+			local tier = RarityData.Tiers[o.Rarity]
+			local pct = o.Percent >= 10 and string.format("%.0f%%", o.Percent)
+				or (o.Percent >= 1 and string.format("%.1f%%", o.Percent) or string.format("%.2f%%", o.Percent))
+			table.insert(segments, string.format('<font color="#%s">%s %s</font>', tier.Color:ToHex(), tier.Name, pct))
+		end
+		UITheme.label({
+			Size = UDim2.new(1, -170, 0, 18), Position = UDim2.new(0, 16, 1, -26),
+			Text = "🎲 " .. table.concat(segments, "  ·  "),
+			Font = UITheme.FontRegular, TextSize = 13, TextColor3 = UITheme.Color.SubText,
+			TextXAlignment = Enum.TextXAlignment.Left, TextScaled = false, TextTruncate = Enum.TextTruncate.AtEnd,
 		}, card)
 
 		local btn = UITheme.button({
@@ -852,7 +868,7 @@ function App.start(screenGui: ScreenGui)
 	UITheme.corner(16, battleButton)
 	UITheme.stroke(UITheme.Color.Accent, 2.5, battleButton)
 	battleButton.MouseButton1Click:Connect(function()
-		if searching then
+		if searching or BattleView.isPlaying() then
 			return
 		end
 		App.setBattleSearching(true)

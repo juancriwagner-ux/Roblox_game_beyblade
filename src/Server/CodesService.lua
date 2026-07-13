@@ -19,7 +19,7 @@ local CODES: { [string]: { Active: boolean, Reward: Reward } } = {
 	LAUNCH = { Active = true, Reward = { Bolts = 1000, Cores = 25 } },
 	BEYBLADE = { Active = true, Reward = { Bolts = 500, Cores = 10 } },
 	SPINSTORM = { Active = true, Reward = { Cores = 15 } },
-	FREEMYTHIC = { Active = true, Reward = { Blade = { Id = "celestial_prime", Rarity = "Legendary" } } },
+	FREEBLADE = { Active = true, Reward = { Blade = { Id = "celestial_prime", Rarity = "Legendary" } } },
 }
 
 local function notify(player: Player, text: string, kind: string?)

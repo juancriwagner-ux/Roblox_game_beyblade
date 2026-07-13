@@ -292,6 +292,9 @@ local function resultBanner(gui: ScreenGui, won: boolean, rewards: any)
 	UITheme.stroke(won and UITheme.Color.Good or UITheme.Color.Bad, 3, banner)
 	UITheme.label({ Size = UDim2.new(1, 0, 0, 60), Position = UDim2.new(0, 0, 0, 16), Text = won and "🏆 ¡VICTORIA!" or "💥 DERROTA", TextSize = 42, TextColor3 = won and UITheme.Color.Good or UITheme.Color.Bad, ZIndex = 48 }, banner)
 	local rt = won and ("+%d Tuercas   +%d Núcleos"):format(rewards.Bolts, rewards.Cores) or ("+%d Tuercas"):format(rewards.Bolts)
+	if rewards.Trophies and rewards.Trophies ~= 0 then
+		rt ..= ("   %s%d 🏆"):format(rewards.Trophies > 0 and "+" or "", rewards.Trophies)
+	end
 	UITheme.label({ Size = UDim2.new(1, 0, 0, 30), Position = UDim2.new(0, 0, 0, 84), Text = rt, TextSize = 20, TextColor3 = UITheme.Color.Bolts, ZIndex = 48 }, banner)
 	banner.Size = UDim2.new(0, 0, 0, 0)
 	TweenService:Create(banner, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, 440, 0, 150), Position = UDim2.new(0.5, -220, 0.5, -180) }):Play()
@@ -329,7 +332,8 @@ local function runCinematic(sides: any, rounds: any, mineWon: boolean, gui: Scre
 		end
 		return models
 	end
-	local mineModels = build(sides.mine.Blades, -7, true)
+	-- Skins are the local player's picks — only valid when we ARE side "mine".
+	local mineModels = build(sides.mine.Blades, -7, not opts.spectator)
 	local foeModels = build(sides.foe.Blades, 7, false)
 
 	local spinner = makeSpinner()

@@ -6,7 +6,7 @@
 local SeasonData = {}
 
 SeasonData.MaxTier = 30
-SeasonData.XpPerTier = 800
+SeasonData.XpPerTier = 500 -- ~8 wins per tier; full pass ≈ 250 wins/month
 SeasonData.PremiumPriceCores = 150 -- can also be sold via Robux (see Monetization)
 
 local MONTHS = {

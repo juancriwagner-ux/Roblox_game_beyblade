@@ -124,10 +124,12 @@ local function makeBot(targetPower: number): any
 	return best
 end
 
-local function grantRewards(player: Player, won: boolean, oppTrophies: number, oppName: string, oppLoadout: any)
+-- Returns the ACTUAL rewards granted (incl. streak bonus + trophy delta) so
+-- the client banner can show real numbers, not the base config values.
+local function grantRewards(player: Player, won: boolean, oppTrophies: number, oppName: string, oppLoadout: any): any
 	local p = DataService.get(player)
 	if not p then
-		return
+		return { Bolts = 0, Cores = 0, Trophies = 0, Won = won }
 	end
 	p.Stats.Battles += 1
 	-- Trophies (competitive ladder).
@@ -135,17 +137,22 @@ local function grantRewards(player: Player, won: boolean, oppTrophies: number, o
 	p.Trophies = math.max(0, p.Trophies + delta)
 	p.PeakTrophies = math.max(p.PeakTrophies, p.Trophies)
 
+	local bolts, cores
 	if won then
 		p.Stats.Wins += 1
 		p.Stats.Streak += 1
 		p.Stats.BestStreak = math.max(p.Stats.BestStreak, p.Stats.Streak)
 		local streakBonus = math.min(p.Stats.Streak, Config.Rewards.WinStreakCap) * Config.Rewards.WinStreakBonusBolts
-		EconomyService.add(player, "Bolts", Config.Rewards.BattleWinBolts + streakBonus, true)
-		EconomyService.add(player, "Cores", Config.Rewards.BattleWinCores, true)
+		bolts = Config.Rewards.BattleWinBolts + streakBonus
+		cores = Config.Rewards.BattleWinCores
+		EconomyService.add(player, "Bolts", bolts, true)
+		EconomyService.add(player, "Cores", cores, true)
 	else
 		p.Stats.Losses += 1
 		p.Stats.Streak = 0
-		EconomyService.add(player, "Bolts", Config.Rewards.BattleLoseBolts, true)
+		bolts = Config.Rewards.BattleLoseBolts
+		cores = 0
+		EconomyService.add(player, "Bolts", bolts, true)
 	end
 
 	-- Battle history (newest first, capped at 15).
@@ -169,13 +176,12 @@ local function grantRewards(player: Player, won: boolean, oppTrophies: number, o
 	if won then
 		QuestService.report(player, "win", 1)
 	end
+
+	return { Bolts = bolts, Cores = cores, Trophies = delta, Won = won }
 end
 
-local function sendResult(player: Player, result: any, youAre: number, opponentName: string, won: boolean)
-	local rewards = won
-		and { Bolts = Config.Rewards.BattleWinBolts, Cores = Config.Rewards.BattleWinCores, Won = true }
-		or { Bolts = Config.Rewards.BattleLoseBolts, Cores = 0, Won = false }
-	;(Net.get("BattleResult") :: RemoteEvent):FireClient(player, result, youAre, opponentName, rewards)
+local function sendResult(player: Player, result: any, youAre: number, opponentName: string, rewards: any)
+	(Net.get("BattleResult") :: RemoteEvent):FireClient(player, result, youAre, opponentName, rewards)
 end
 
 -- Resolve a match between two tickets (b may be a bot ticket with no player).
@@ -191,13 +197,13 @@ local function runMatch(a: Ticket, b: Ticket)
 
 	if a.player then
 		inBattle[a.player] = false
-		grantRewards(a.player, aWon, b.trophies, aOppName, b.loadout)
-		sendResult(a.player, result, 1, aOppName, aWon)
+		local rewards = grantRewards(a.player, aWon, b.trophies, aOppName, b.loadout)
+		sendResult(a.player, result, 1, aOppName, rewards)
 	end
 	if b.player then
 		inBattle[b.player] = false
-		grantRewards(b.player, bWon, a.trophies, bOppName, a.loadout)
-		sendResult(b.player, result, 2, bOppName, bWon)
+		local rewards = grantRewards(b.player, bWon, a.trophies, bOppName, a.loadout)
+		sendResult(b.player, result, 2, bOppName, rewards)
 	end
 
 	-- Register for spectators (SideA = a's name, SideB = b's name).
@@ -263,11 +269,8 @@ local function avgTrophies(team: { Ticket }): number
 	return math.floor(sum / math.max(1, #team))
 end
 
-local function sendTeam(player: Player, payload: any, youTeam: number, won: boolean)
-	local rewards = won
-		and { Bolts = Config.Rewards.BattleWinBolts, Cores = Config.Rewards.BattleWinCores, Won = true }
-		or { Bolts = Config.Rewards.BattleLoseBolts, Cores = 0, Won = false }
-	;(Net.get("TeamBattleResult") :: RemoteEvent):FireClient(player, payload, youTeam, rewards)
+local function sendTeam(player: Player, payload: any, youTeam: number, rewards: any)
+	(Net.get("TeamBattleResult") :: RemoteEvent):FireClient(player, payload, youTeam, rewards)
 end
 
 local function runTeamMatch(teamA: { Ticket }, teamB: { Ticket })
@@ -280,16 +283,18 @@ local function runTeamMatch(teamA: { Ticket }, teamB: { Ticket })
 	local nameA, nameB = teamName(teamA), teamName(teamB)
 	local trA, trB = avgTrophies(teamA), avgTrophies(teamB)
 
+	-- Grant first (so the payload each client gets reflects real rewards).
+	local rewardsByPlayer: { [Player]: any } = {}
 	for _, t in teamA do
 		if t.player then
 			inBattle[t.player] = false
-			grantRewards(t.player, aWon, trB, "Equipo " .. nameB, nil)
+			rewardsByPlayer[t.player] = grantRewards(t.player, aWon, trB, "Equipo " .. nameB, nil)
 		end
 	end
 	for _, t in teamB do
 		if t.player then
 			inBattle[t.player] = false
-			grantRewards(t.player, not aWon, trA, "Equipo " .. nameA, nil)
+			rewardsByPlayer[t.player] = grantRewards(t.player, not aWon, trA, "Equipo " .. nameA, nil)
 		end
 	end
 
@@ -298,12 +303,12 @@ local function runTeamMatch(teamA: { Ticket }, teamB: { Ticket })
 
 	for _, t in teamA do
 		if t.player then
-			sendTeam(t.player, payload, 1, aWon)
+			sendTeam(t.player, payload, 1, rewardsByPlayer[t.player])
 		end
 	end
 	for _, t in teamB do
 		if t.player then
-			sendTeam(t.player, payload, 2, not aWon)
+			sendTeam(t.player, payload, 2, rewardsByPlayer[t.player])
 		end
 	end
 end
