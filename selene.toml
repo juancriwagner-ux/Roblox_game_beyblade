@@ -1,8 +1,10 @@
 # Selene linter config — Luau + Roblox globals.
+# On a normal machine selene downloads the Roblox std automatically
+# (`selene src/`). In offline/sandboxed environments use the official
+# luau-analyze instead for syntax checking.
 std = "roblox"
 
 [lints]
-# We only care about real errors for the pre-publish gate; style noise off.
 unused_variable = "allow"
 shadowing = "allow"
 empty_if = "allow"
