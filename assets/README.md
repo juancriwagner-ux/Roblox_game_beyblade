@@ -73,20 +73,30 @@ Ya están cableados en el juego (no-op hasta que pegues los IDs).
 > Para audio importado, Roblox puede requerir aprobación de moderación antes de
 > que el ID sea reproducible.
 
-## 🎵 Música de fondo (pendiente de generar)
+## 🎼 Música de fondo (generada ✅)
 
-Cableada en el juego (`MusicController` + `Assets.Music`), con crossfade entre
-el tema del menú y el de batalla y respeto al ajuste de Música. Falta generar
-las pistas (el acceso de generación estaba bloqueado por aprobación). Genéralas
-con `sonilo_music` (~60 s, loop) y pega los IDs en `Assets.Music`:
+Súbelas en *Asset Manager → Audio → Import* y pega el ID en `Assets.Music`.
+El crossfade Menú ↔ Batalla ya está cableado.
 
-| Pista | Clave | Prompt sugerido |
+| Pista | Clave en `Assets.lua` | job id |
 |---|---|---|
-| **Menú/Hub** | `Menu` | "Energetic upbeat electronic menu theme, futuristic arcade, driving synth arpeggios, punchy drums, heroic, seamless loop, no vocals" |
-| **Batalla** | `Battle` | "Intense fast electronic battle theme, aggressive bass, epic percussion, rising tension, esports hype, seamless loop, no vocals" |
+| **Tema de Menú** (electrónico arcade, 60s loop) | `Music.Menu` | `0b03efa6-68ca-4a5e-a2ff-fdd2176ef85d` |
+| **Tema de Batalla** (épico intenso, 60s loop) | `Music.Battle` | `e7ec5cb6-a478-4057-9251-2c6a900f8252` |
 
-> Súbelas en *Asset Manager → Audio → Import* (puede requerir moderación) y pega
-> los IDs en `src/Shared/Assets.lua` → `Assets.Music`.
+> Nota: salen en formato `.m4a`; si Roblox rechaza el formato al importar,
+> conviértelas a `.mp3`/`.ogg` (cualquier conversor online sirve).
+
+## 🎬 Videos virales (generados ✅)
+
+Para subir a TikTok/Reels/Shorts/YouTube — captions y SEO en
+`marketing/viral-content-kit.md` y `marketing/youtube-seo-and-voiceover.md`.
+
+| Video | Formato | job id |
+|---|---|---|
+| **Trailer** (choque en estadio neón) | 16:9 · 10s | `efbfa4d7-4361-4caf-b3a9-5b9149ac9714` |
+| **"SALIÓ MÍTICO"** (reveal del Prisma) | 9:16 · 5s | `12666858-9535-4727-830d-a7c3983c49fc` |
+| **"Fuego vs Rayo"** (bait de comentarios) | 9:16 · 5s | `de71c531-6241-408f-ad1d-4a43fad98528` |
+| **Spin ASMR** (Eternal Halo, loop) | 9:16 · 5s | `7b2ef390-b4a7-4bf7-991f-a8d8510e3a90` |
 
 ## 🔁 Regenerar o ampliar
 
