@@ -7,6 +7,31 @@ Leyenda: 🧑‍💻 = lo haces TÚ · 🤖 = ya está hecho en el código.
 
 ---
 
+## ⚡ LANZAMIENTO EXPRESS (estar arriba HOY, ~30 min)
+
+La ruta mínima. Todo lo demás (assets, monetización, badges) se puede añadir
+DESPUÉS sin tumbar el juego — el código tiene fallbacks para todo.
+
+1. **Abre el `.rbxlx`** que te pasó Claude en Studio (doble clic).
+2. **File → Publish to Roblox As…** → *Create new experience* → nombre
+   **Beyblade Arena** → Create.
+3. En **create.roblox.com → tu experiencia → Configure**:
+   - **Security** → activa *Enable Studio Access to API Services* (guardado).
+   - **Basic Info** → descripción (usa `marketing/youtube-seo-and-voiceover.md`),
+     géneros (Fighting/Battle), dispositivos: Computer + Phone + Tablet.
+   - **Places → tu lugar** → max players: **12**.
+4. **Smoke test publicado** (10 min, IMPRESCINDIBLE): entra desde la app de
+   Roblox (no Studio) → tutorial → recolecta un blade → 1 batalla → sal →
+   vuelve a entrar → **verifica que tu progreso se guardó**.
+5. **Basic Info → Public** → ¡estás arriba! 🎉
+6. Sube el trailer + Shorts (`marketing/viral-content-kit.md`) con el código
+   `LAUNCH` fijado en comentarios.
+
+> Después del lanzamiento, sigue las fases 5-7 de abajo para ícono/miniaturas,
+> assets premium, música y monetización — cada una suma sin downtime.
+
+---
+
 ## Fase 0 — Requisitos (una sola vez)
 
 - [ ] 🧑‍💻 Cuenta de Roblox + **Roblox Studio** instalado (https://create.roblox.com).
@@ -42,7 +67,7 @@ Leyenda: 🧑‍💻 = lo haces TÚ · 🤖 = ya está hecho en el código.
       (create.roblox.com → tu experiencia → **Configure → Security**) activa
       **"Enable Studio Access to API Services"** (necesario para probar DataStore
       desde Studio; en el juego publicado ya funciona).
-      - Stores usados: `BeybladeProfiles_v1`, `LB_Trophies_v1`, `LB_Wins_v1`.
+      - Stores usados: `BeybladeProfiles_v2`, `LB_Trophies_v1`, `LB_Wins_v1`.
 - [ ] 🧑‍💻 **Badges** (para los logros): se crean en la Fase 6. `BadgeService` ya
       está integrado; sin IDs simplemente no otorga badge (el logro funciona igual).
 - [ ] 🤖 HTTP: **no** se requiere (no usamos servicios externos).

@@ -1,0 +1,8 @@
+# Selene linter config — Luau + Roblox globals.
+std = "roblox"
+
+[lints]
+# We only care about real errors for the pre-publish gate; style noise off.
+unused_variable = "allow"
+shadowing = "allow"
+empty_if = "allow"
